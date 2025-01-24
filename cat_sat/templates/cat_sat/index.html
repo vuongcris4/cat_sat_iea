@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tối ưu hóa cắt sắt</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    {% load static %} <!-- Load static để sử dụng file CSS -->
+    <link rel="stylesheet" href="{% static 'cat_sat/styles.css' %}">
+</head>
+
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Logs bên trái -->
+            <div class="col-md-6">
+                <h1 class="text-primary">Tối ưu hóa cắt sắt</h1>
+                <form id="optimizationForm" method="post" novalidate>
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary">Tối ưu hóa</button>
+                </form>
+            </div>
+
+            <!-- Logs bên phải -->
+            <div class="col-md-6 d-flex flex-column">
+                <h2 class="text-secondary">Kết quả</h2>
+                <div id="logs" class="border rounded p-3 bg-light"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const form = document.getElementById('optimizationForm');
+        const logOutput = document.getElementById('logs');
+
+        // Tạo kết nối WebSocket
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const socket = new WebSocket(
+            wsProtocol + window.location.host + '/ws/optimization/log'
+        );
+
+        socket.onopen = function () {
+            console.log("WebSocket connection established.");
+        };
+
+        // Nhận log từ WebSocket và hiển thị
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            message = data["message"];
+            if (message != "!CLEAR!") {
+                logOutput.textContent += message;   // Append log
+            }
+            else { logOutput.textContent = ""; }
+            logOutput.scrollTop = logOutput.scrollHeight;
+            // console.log(data)
+        };
+
+        socket.onclose = function () {
+            console.log("WebSocket connection closed.");
+        };
+
+        socket.onerror = function (error) {
+            console.error("WebSocket error: ", error);
+        };
+
+        form.addEventListener('submit', function (e) {
+            console.log("nhấn nút Tối ưu hóa")
+            e.preventDefault();
+
+            logOutput.textContent = ""
+
+            const data = {
+                length: form.length.value,
+                segment_sizes: form.segment_sizes.value.split(/[\s,]+/).filter(Boolean).map(Number),
+                demands: form.demands.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
+                blade_width: parseFloat(form.blade_width.value),
+                factors: form.factors.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
+                max_manual_cuts: parseInt(form.max_manual_cuts.value),
+                max_stock_over: parseInt(form.max_stock_over.value)
+            };
+
+            fetch("{% url 'optimize' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data),
+            })
+                .then(response => response.json())
+                .then(data => { // Mảng x trả về từ python
+                    console.log(data);
+                })
+                .catch(error => {
+                    console.log("Error: ", error);
+                });
+        });
+    </script>
+</body>
+
+</html>
