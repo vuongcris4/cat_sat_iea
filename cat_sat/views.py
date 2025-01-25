@@ -54,6 +54,7 @@ def optimize(request):
             )
 
             solutions = optimizer.optimize_cutting()    # tìm nghiệm từng cây sắt
+            print("!CLEAR!")
             distribution = optimizer.optimize_distribution()    # số bó
 
             return JsonResponse({

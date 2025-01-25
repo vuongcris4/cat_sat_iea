@@ -199,4 +199,5 @@ class SteelCuttingOptimizer:
             print(f"Hao hụt: {(Loss.getValue() / (self.length * tong_sat))*100:.2f}%\n")
             return x_optimal
         else:
+            print("ĐÃ STOP TIẾN TRÌNH!")
             raise ValueError("No optimal solution found.")
