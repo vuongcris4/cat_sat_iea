@@ -7,7 +7,7 @@
     <title>Tối ưu hóa cắt sắt</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     {% load static %} <!-- Load static để sử dụng file CSS -->
-    <link rel="stylesheet" href="{% static 'cat_sat/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'cat_sat/styles.css' %}?v=1.1">
 </head>
 
 <body>
@@ -19,8 +19,14 @@
                 <form id="optimizationForm" method="post" novalidate>
                     {% csrf_token %}
                     {{ form.as_p }}
-                    <button type="submit" class="btn btn-primary">Tối ưu hóa</button>
+                    <div class="button-container">
+                        <button id="start-process" type="submit" class="btn btn-primary button-start-stop btn-optimize">Tối ưu hóa</button>
+                        <br>
+                        <button id="stop-process" type="button" class="btn btn-danger button-start-stop btn-stop" onclick="stopServer()"
+                            style="display: none;">Dừng giải</button>
+                    </div>
                 </form>
+
             </div>
 
             <!-- Logs bên phải -->
@@ -35,6 +41,9 @@
     <script>
         const form = document.getElementById('optimizationForm');
         const logOutput = document.getElementById('logs');
+        const stopButton = document.getElementById("stop-process");
+        const startButton = document.getElementById("start-process");
+
 
         // Tạo kết nối WebSocket
         const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -50,12 +59,14 @@
         socket.onmessage = function (event) {
             const data = JSON.parse(event.data);
             message = data["message"];
-            if (message != "!CLEAR!") {
-                logOutput.textContent += message;   // Append log
+            if (message == "!CLEAR!") {
+                logOutput.textContent = "";// Append log
             }
-            else { logOutput.textContent = ""; }
+            else if (message == "!XONGBUOC1!") {
+                stopButton.style.display = "inline-block"; // Hiển thị nút sau khi tìm nghiệm hết các cây sắt
+            }
+            else { logOutput.textContent += message; }
             logOutput.scrollTop = logOutput.scrollHeight;
-            // console.log(data)
         };
 
         socket.onclose = function () {
@@ -66,8 +77,47 @@
             console.error("WebSocket error: ", error);
         };
 
+        // Lưu dữ liệu form vào localStorage mỗi khi có thay đổi
+        form.addEventListener('input', function () {
+            const formData = new FormData(form);
+
+            formData.forEach((value, key) => {
+                localStorage.setItem(key, value);
+            });
+        });
+
+        // Khi trang được tải lại, khôi phục dữ liệu từ localStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const formData = new FormData(form);
+
+            formData.forEach((value, key) => {
+                const savedValue = localStorage.getItem(key);
+                if (savedValue !== null) {
+                    const field = form.querySelector(`[name="${key}"]`);
+                    if (field) {
+                        field.value = savedValue;
+                    }
+                }
+            });
+        });
+
+        form.addEventListener("keydown", function(event) {  // Xử lí trường hợp Kki nhấn nút Enter
+            if (event.key === "Enter") {
+                event.preventDefault(); // Ngăn không cho form tự động submit
+
+                // Kiểm tra nút nào đang hiển thị
+                if (startButton.style.display !== "none") {
+                    startButton.click(); // Kích hoạt nút "Tối ưu hóa"
+                } else if (stopButton.style.display !== "none") {
+                    stopButton.click(); // Kích hoạt nút "Dừng giải"
+                }
+            }
+        });
+
+
         form.addEventListener('submit', function (e) {
             console.log("nhấn nút Tối ưu hóa")
+            startButton.style.display = "none";
             e.preventDefault();
 
             logOutput.textContent = ""
@@ -91,14 +141,34 @@
                 body: JSON.stringify(data),
             })
                 .then(response => response.json())
-                .then(data => { // Mảng x trả về từ python
-                    console.log(data);
+                .then(data => {
+                    // console.log(data);
+                    // if (data.status == "success"){
+                    //     stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
+                    // }
+                    stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
+                    startButton.style.display = "inline-block";
                 })
                 .catch(error => {
-                    console.log("Error: ", error);
+                    stopButton.style.display = "none";  // Ẩn nút dừng nếu có lỗi
+                    startButton.style.display = "inline-block";
+
                 });
         });
+
+        function stopServer() {
+            stopButton.style.display = "none";  // Ẩn nút dừng ngay khi bấm nút
+
+            fetch('http://127.0.0.1:8383/trigger-stop', {
+                method: 'GET'
+            })
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(error => console.log('Error:', error));
+        }
+
     </script>
+
 </body>
 
 </html>

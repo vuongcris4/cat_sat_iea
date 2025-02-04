@@ -1,7 +1,7 @@
 from django import forms
 
 class OptimizationForm(forms.Form):
-    LENGTH_CHOICES = [(5850, '5850'), (6000, '6000')]
+    LENGTH_CHOICES = [(5740, '5740'), (5850, '5850'), (6000, '6000')]
     BLADE_WIDTH_CHOICES = [(2.5, '2.5'), (3, '3')]
 
     length = forms.ChoiceField(

@@ -1,11 +1,13 @@
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 import json
 from .forms import OptimizationForm
 from .optimization_logic import SteelCuttingOptimizer
 import asyncio
 from channels.layers import get_channel_layer
 import sys
+import os
+import signal
 
 class TeeStream:
     # Redirect stdout to WebSocket
@@ -35,6 +37,9 @@ def index(request):
     form = OptimizationForm()
     return render(request, 'cat_sat/index.html', {'form': form})  
 
+def stop_server(request):
+    os.kill(os.getpid(), signal.SIGINT)  # Gửi tín hiệu dừng server
+    return HttpResponse("Server is stopping...")
 
 def optimize(request):
     if request.method == 'POST':
@@ -55,6 +60,7 @@ def optimize(request):
 
             solutions = optimizer.optimize_cutting()    # tìm nghiệm từng cây sắt
             print("!CLEAR!")
+            print("!XONGBUOC1!")    # Gwủi xong bước 1 để hiện nút stop tiến trình đang giải
             distribution = optimizer.optimize_distribution()    # số bó
 
             return JsonResponse({
