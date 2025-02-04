@@ -15,12 +15,12 @@
         <div class="row">
             <!-- Logs bên trái -->
             <div class="col-md-6">
-                <h1 class="text-primary">Tối ưu hóa cắt sắt</h1>
+                <h1 class="text-primary">Cắt sắt IEA</h1>
                 <form id="optimizationForm" method="post" novalidate>
                     {% csrf_token %}
                     {{ form.as_p }}
                     <div class="button-container">
-                        <button id="start-process" type="submit" class="btn btn-primary button-start-stop btn-optimize">Tối ưu hóa</button>
+                        <button id="start-process" type="submit" class="btn btn-primary button-start-stop btn-optimize">Tìm phương án cắt</button>
                         <br>
                         <button id="stop-process" type="button" class="btn btn-danger button-start-stop btn-stop" onclick="stopServer()"
                             style="display: none;">Dừng giải</button>
