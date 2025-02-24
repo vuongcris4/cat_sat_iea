@@ -39,7 +39,7 @@ class SteelCuttingOptimizer:
             blade_width=self.blade_width
         )
 
-        if 0 < solutions.count() < 100:
+        if 0 < solutions.count() < 20:
             print("DANH SÁCH NGHIỆM QUÁ NHỎ, ĐANG GIẢI LẠI!!!!")
             solutions.delete()
 
@@ -54,8 +54,6 @@ class SteelCuttingOptimizer:
                 if sum(1 for x in solution if x != 0) <= 5
             ]
 
-            print(filtered_solutions)
-
             return filtered_solutions
         else:        
             return list_solutions
@@ -65,8 +63,10 @@ class SteelCuttingOptimizer:
 
         # Tìm nghiệm cho 1 cây sắt
         if not self.solutions:
-            print("DD cos nghiemj")
+            print("Chưa có nghiệm trong CSDL, đang tìm nghiệm")
             model = gp.Model("Steel Cutting Optimization")
+            model.setParam('OutputFlag', 0) # Tắt log mặc định ra CMD
+
             variables = []  # biến x1, x2, x3, x4
             # Ràng buộc 0<=x<=30
             for i in range(len(self.segment_sizes)):
@@ -102,15 +102,22 @@ class SteelCuttingOptimizer:
                         gp.quicksum((variables[i] - solution[i]) * (variables[i] - solution[i]) for i in range(len(variables))) >= 1,
                         name=f"ExcludeSolution_{len(self.solutions)}"
                     )   # sum from 1 to 4 (xi - xio)^2 >= 1, loại bỏ nghiệm vừa tìm được
+
+                    print(f"{solution}, Hao hụt {self.length-obj_value}/cây\n")  # in nghiệm trong quá trình tìm được
                 else:
                     break
+                
 
             self.save_solution_to_model()
 
         self.solution_matrix = np.array([sol[1] for sol in self.solutions])
-        print("\nTất cả các nghiệm tìm được:\n")
-        for obj_value, sol in self.solutions:
-            print(f"Nghiệm: {sol}, f(x) = {obj_value}, Minimized length - objective = {self.length - obj_value}\n")
+        print("------------------------------------------------\n")
+        print(f"ĐÃ CÓ {len(self.solution_matrix)} NGHIỆM TRONG CSDL\n")
+        print("------------------------------------------------\n")
+
+        # print("\nTất cả các nghiệm tìm được:\n")
+        # for obj_value, sol in self.solutions:
+        #     print(f"Nghiệm: {sol}, f(x) = {obj_value}, Minimized length - objective = {self.length - obj_value}\n")
 
         return self.solutions
 

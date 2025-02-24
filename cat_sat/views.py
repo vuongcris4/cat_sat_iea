@@ -59,7 +59,7 @@ def optimize(request):
             )
 
             solutions = optimizer.optimize_cutting()    # tìm nghiệm từng cây sắt
-            print("!CLEAR!")
+            # print("!CLEAR!")
             print("!XONGBUOC1!")    # Gwủi xong bước 1 để hiện nút stop tiến trình đang giải
             distribution = optimizer.optimize_distribution()    # số bó
 
