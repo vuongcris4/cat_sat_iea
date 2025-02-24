@@ -37,14 +37,35 @@ class SteelCuttingOptimizer:
             length=self.length,
             segment_sizes=self.segment_sizes.tolist(),
             blade_width=self.blade_width
-        ).values_list('obj_value', 'solution')
-        return list(solutions)
+        )
+
+        if 0 < solutions.count() < 100:
+            print("DANH SÁCH NGHIỆM QUÁ NHỎ, ĐANG GIẢI LẠI!!!!")
+            solutions.delete()
+
+        list_solutions = list(solutions.values_list('obj_value', 'solution'))
+
+        # CẬP NHẬT THÊM CHỖ MÁY CẮT TỰ ĐỘNG
+        if len(self.segment_sizes) > 5:
+            # MÁY CẮT TỰ ĐỘNG KHÔNG NHẬP QUÁ 5 LẦN
+
+            filtered_solutions = [
+                (obj_value, solution) for obj_value, solution in list_solutions
+                if sum(1 for x in solution if x != 0) <= 5
+            ]
+
+            print(filtered_solutions)
+
+            return filtered_solutions
+        else:        
+            return list_solutions
 
     def optimize_cutting(self):
         self.solutions = self.load_solution_from_model()
 
         # Tìm nghiệm cho 1 cây sắt
         if not self.solutions:
+            print("DD cos nghiemj")
             model = gp.Model("Steel Cutting Optimization")
             variables = []  # biến x1, x2, x3, x4
             # Ràng buộc 0<=x<=30
