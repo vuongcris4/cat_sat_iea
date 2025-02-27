@@ -50,6 +50,7 @@ def optimize(request):
 
             optimizer = SteelCuttingOptimizer(
                 length = int(data['length']),
+                te_dau_sat = int(data['te_dau_sat']),
                 segment_sizes = list(map(float, data['segment_sizes'])),
                 demands = list(map(int, data['demands'])),
                 blade_width = float(data['blade_width']),

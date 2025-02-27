@@ -11,6 +11,12 @@ class OptimizationForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
 
+    te_dau_sat = forms.IntegerField(
+        label="Tề đầu sắt",
+        initial=0,
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+
     segment_sizes = forms.CharField(
         label="Kích thước đoạn",
         initial="500 255 600 615",

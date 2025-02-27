@@ -8,8 +8,9 @@ from django.db import models
 from .models import Solution
 
 class SteelCuttingOptimizer:
-    def __init__(self, length, segment_sizes, demands, blade_width, factors, max_manual_cuts, max_stock_over):
+    def __init__(self, length, te_dau_sat, segment_sizes, demands, blade_width, factors, max_manual_cuts, max_stock_over):
         self.length = length
+        self.te_dau_sat = te_dau_sat
         self.segment_sizes = np.array(segment_sizes)
         self.demands = np.array(demands)
         self.blade_width = blade_width
@@ -29,6 +30,14 @@ class SteelCuttingOptimizer:
                     obj_value=obj_value,
                     solution=solution
                 )
+    
+    def cut_list(self, lst, x, length):   # Tề đầu
+        # Tìm vị trí đầu tiên thỏa mãn điều kiện obj_value + x <= length
+        for i, (obj_value, solution) in enumerate(lst):
+            if obj_value + x <= length:
+                return lst[i:]  # Cắt từ vị trí này trở đi
+        return []  # Trả về danh sách rỗng nếu không có phần tử nào thỏa mãn
+
 
     def load_solution_from_model(self):
         # solutions = Solution.objects.filter(length=self.length, segment_sizes=self.segment_sizes.tolist(), blade_width=self.blade_width)
@@ -39,11 +48,17 @@ class SteelCuttingOptimizer:
             blade_width=self.blade_width
         )
 
-        if 0 < solutions.count() < 20:
+        if 0 < solutions.count() < 10:
             print("DANH SÁCH NGHIỆM QUÁ NHỎ, ĐANG GIẢI LẠI!!!!")
             solutions.delete()
 
         list_solutions = list(solutions.values_list('obj_value', 'solution'))
+
+        print("------------------------------------------------<br>")
+        print(f"ĐÃ CÓ {len(list_solutions)} NGHIỆM TRONG CSDL<br>")
+        print("------------------------------------------------<br>")
+
+        list_solutions = self.cut_list(list_solutions, self.te_dau_sat, self.length)    # Tăng độ hao hụt >= một số cho trước
 
         # CẬP NHẬT THÊM CHỖ MÁY CẮT TỰ ĐỘNG
         if len(self.segment_sizes) > 5:
@@ -112,7 +127,7 @@ class SteelCuttingOptimizer:
 
         self.solution_matrix = np.array([sol[1] for sol in self.solutions])
         print("------------------------------------------------<br>")
-        print(f"ĐÃ CÓ {len(self.solution_matrix)} NGHIỆM TRONG CSDL<br>")
+        print(f"THỰC TẾ LOAD {len(self.solution_matrix)} NGHIỆM<br>")
         print("------------------------------------------------<br>")
 
         # print("<br>Tất cả các nghiệm tìm được:<br>")

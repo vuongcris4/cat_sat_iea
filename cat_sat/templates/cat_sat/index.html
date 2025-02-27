@@ -130,6 +130,7 @@
 
             formDataGlobal = {
                 length: form.length.value,
+                te_dau_sat: parseInt(form.te_dau_sat.value),
                 segment_sizes: form.segment_sizes.value.split(/[\s,]+/).filter(Boolean).map(Number),
                 demands: form.demands.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
                 blade_width: parseFloat(form.blade_width.value),
