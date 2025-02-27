@@ -103,7 +103,7 @@ class SteelCuttingOptimizer:
                         name=f"ExcludeSolution_{len(self.solutions)}"
                     )   # sum from 1 to 4 (xi - xio)^2 >= 1, loại bỏ nghiệm vừa tìm được
 
-                    print(f"{solution}, Hao hụt {self.length-obj_value}/cây\n")  # in nghiệm trong quá trình tìm được
+                    print(f"{solution}, Hao hụt {self.length-obj_value}/cây<br>")  # in nghiệm trong quá trình tìm được
                 else:
                     break
                 
@@ -111,13 +111,13 @@ class SteelCuttingOptimizer:
             self.save_solution_to_model()
 
         self.solution_matrix = np.array([sol[1] for sol in self.solutions])
-        print("------------------------------------------------\n")
-        print(f"ĐÃ CÓ {len(self.solution_matrix)} NGHIỆM TRONG CSDL\n")
-        print("------------------------------------------------\n")
+        print("------------------------------------------------<br>")
+        print(f"ĐÃ CÓ {len(self.solution_matrix)} NGHIỆM TRONG CSDL<br>")
+        print("------------------------------------------------<br>")
 
-        # print("\nTất cả các nghiệm tìm được:\n")
+        # print("<br>Tất cả các nghiệm tìm được:<br>")
         # for obj_value, sol in self.solutions:
-        #     print(f"Nghiệm: {sol}, f(x) = {obj_value}, Minimized length - objective = {self.length - obj_value}\n")
+        #     print(f"Nghiệm: {sol}, f(x) = {obj_value}, Minimized length - objective = {self.length - obj_value}<br>")
 
         return self.solutions
 
@@ -192,7 +192,7 @@ class SteelCuttingOptimizer:
             x_optimal = np.array([[x[i, j].X for j in range(k)] for i in range(n)])
 
             print("Kích thước đoạn (mm): ")
-            print(f"{self.segment_sizes}\n")
+            print(f"{self.segment_sizes}<br>")
             # Duyệt qua từng hàng
             tong_lan_cat = 0
             tong_cat_tay = 0
@@ -201,30 +201,30 @@ class SteelCuttingOptimizer:
                 if non_zero_elements.size > 0:
                     # Đếm số lượng mỗi loại số
                     counts = Counter(non_zero_elements)
-                    print("Chọn: ",A[:,row_index], " Hao hụt: ", str(L[row_index])+" mm/cây\n")
+                    print("Chọn: ",A[:,row_index], " Hao hụt: ", str(L[row_index])+" mm/cây<br>")
 
                     for num, count in counts.items():
-                        print(f"\t{num} cây/bó: {count} lần\n")
+                        print(f"\t{num} cây/bó: {count} lần<br>")
                         if num == 1:
                             tong_cat_tay += 1
                         tong_lan_cat += count
             
             tong_sat = sum(sum(x_optimal))
-            print("____\n")
-            print("Yêu cầu: \n")
-            print(f"{self.demands}\n")
-            print("Đã cắt được: \n")
-            print(f"{np.array([C[i].X for i in C])}\n")    # {0: <gurobi.Var C[0] (value 788.0)>, 1: <gurobi.Var C[1] (value 1580.0)>, 2: <gurobi.Var C[2] (value 1508.0)>, 3: <gurobi.Var C[3] (value 1508.0)\n>}
-            print("____\n")
-            print(f"Tổng lần cắt: {tong_lan_cat}\n")
-            print("Trong đó: cắt máy: ", tong_sat-tong_cat_tay," cây, "," cắt tay: ", tong_cat_tay, " cây\n")
+            print("____<br>")
+            print("Yêu cầu: <br>")
+            print(f"{self.demands}<br>")
+            print("Đã cắt được: <br>")
+            print(f"{np.array([C[i].X for i in C])}<br>")    # {0: <gurobi.Var C[0] (value 788.0)>, 1: <gurobi.Var C[1] (value 1580.0)>, 2: <gurobi.Var C[2] (value 1508.0)>, 3: <gurobi.Var C[3] (value 1508.0)<br>>}
+            print("____<br>")
+            print(f"Tổng lần cắt: {tong_lan_cat}<br>")
+            print("Trong đó: cắt máy: ", tong_sat-tong_cat_tay," cây, "," cắt tay: ", tong_cat_tay, " cây<br>")
             time_estimate = tong_cat_tay * 5 + (tong_lan_cat-tong_cat_tay) * 4 # cắt tay * x + cắt máy * y
-            print("Thời gian ước tính: ", time_estimate // 60," giờ ",time_estimate % 60," phút\n")
-            print("____\n")
-            print("Tổng cây sắt cần: ", tong_sat, " cây\n")
-            print("Cắt được: ",(self.length * tong_sat - Loss.getValue())/1000,"m\n")
-            print("Hao hụt: ", Loss.getValue()/1000,"m\n")
-            print(f"Hao hụt: {(Loss.getValue() / (self.length * tong_sat))*100:.2f}%\n")
+            print("Thời gian ước tính: ", time_estimate // 60," giờ ",time_estimate % 60," phút<br>")
+            print("____<br>")
+            print("Tổng cây sắt cần: ", tong_sat, " cây<br>")
+            print("Cắt được: ",(self.length * tong_sat - Loss.getValue())/1000,"m<br>")
+            print("Hao hụt: ", Loss.getValue()/1000,"m<br>")
+            print(f"Hao hụt: {(Loss.getValue() / (self.length * tong_sat))*100:.2f}%<br>")
             return x_optimal
         else:
             # print("ĐÃ STOP TIẾN TRÌNH!")
