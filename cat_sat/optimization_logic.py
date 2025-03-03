@@ -94,7 +94,7 @@ class SteelCuttingOptimizer:
                 self.blade_width * total_sum
             )   # Hàm mục tiêu: vd: 500x + 255y + 600z + 615t + 2.5*(x+y+z+t)
 
-            model.addConstr(objective <= self.length, "UpperBound") # Ràng buộc <= 5850
+            model.addConstr(objective <= self.length - 15, "UpperBound") # Ràng buộc <= 5850 (-15 TỀ ĐẦU)
             model.addConstr(objective >= self.length * (1 - 0.01), "LowerBound") # >= 5850*(1-0.01)
 
             model.setObjective(objective, GRB.MAXIMIZE) # Chạy tối ưu

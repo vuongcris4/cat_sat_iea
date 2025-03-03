@@ -8,8 +8,15 @@ class OptimizationForm(forms.Form):
         choices=LENGTH_CHOICES,
         label="Chiều dài thanh sắt",
         initial=5850,
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+        })
     )
+
+    # # Thêm HTML cho datalist vào form
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.fields['length'].widget.attrs['datalist'] = 'length-options'
 
     te_dau_sat = forms.IntegerField(
         label="Tề đầu sắt",
