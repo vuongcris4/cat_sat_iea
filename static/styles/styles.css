@@ -1,0 +1,53 @@
+/* header.container-fluid {
+  padding: 2px 5px;
+} */
+
+/* Mặc định navbar */
+.nav a {
+  font-weight: bold;
+  color: blue;
+  padding: 5px 15px;
+}
+
+/* Khi đang click (trang hiện tại) */
+.nav a.active {
+  background-color: rgb(49, 172, 249);
+  color: white !important;
+  border-radius: 5px;
+}
+
+#logs {
+  white-space: pre-wrap; /* Preserve \n as line breaks */
+  overflow-y: auto; /* Add scrolling for long logs */
+  max-height: 850px; /* Optional: Limit container height */
+}
+
+.button-container {
+  position: relative;
+  /* width: 200px; */
+  /* height: 50px; */
+}
+.button-start-stop {
+  position: absolute;
+  /* width: 100%; */
+  /* height: 100%; */
+  /* font-size: 16px; */
+  /* font-weight: bold; */
+  /* border: none; */
+  /* cursor: pointer; */
+  /* border-radius: 10px; */
+}
+
+.btn-optimize {
+  /* background-color: #3498db; */
+  /* color: white; */
+  z-index: 2; /* Nằm trên cùng */
+}
+.btn-stop {
+  /* background-color: #e74c3c; */
+  display: none;
+  /* color: white; */
+  top: 0;
+  left: 0;
+  z-index: 1; /* Nằm dưới */
+}

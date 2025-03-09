@@ -1,208 +1,193 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tối ưu hóa cắt sắt</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-    {% load static %} <!-- Load static để sử dụng file CSS -->
-    <link rel="stylesheet" href="{% static 'cat_sat/styles.css' %}?v=1.1">
-</head>
-
-<body>
-    <div class="container mt-4">
-        <div class="row">
-            <!-- Logs bên trái -->
-            <div class="col-md-6">
-                <h1 class="text-primary">Cắt sắt IEA</h1>
-                <form id="optimizationForm" method="post" novalidate>
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <div class="button-container">
-                        <button id="start-process" type="submit"
-                            class="btn btn-primary button-start-stop btn-optimize">Tìm phương án cắt sắt</button>
-                        <br>
-                        <button id="stop-process" type="button" class="btn btn-danger button-start-stop btn-stop"
-                            onclick="stopServer()" style="display: none;">Dừng tìm phương án</button>
-                    </div>
-                </form>
-
+{% block content %}
+<div class="row">
+    <!-- Logs bên trái -->
+    <div class="col-md-6">
+        <h2 class="text-primary" style="margin-top: 0;">Máy cắt tự động</h2>
+        <form id="optimizationForm" method="post" novalidate>
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="button-container">
+                <button id="start-process" type="submit" class="btn btn-primary button-start-stop btn-optimize">Tìm
+                    phương án cắt sắt</button>
+                <br>
+                <button id="stop-process" type="button" class="btn btn-danger button-start-stop btn-stop"
+                    onclick="stopServer()" style="display: none;">Dừng tìm phương án</button>
             </div>
-
-            <!-- Logs bên phải -->
-            <div class="col-md-6 d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h2 class="text-secondary">Kết quả</h2>
-                    <button id="print-log" class="btn btn-light border" onclick="printDiv()">In kết quả</button>
-                </div>
-                <div id="logs" class="border rounded p-3 bg-light"></div>
-            </div>
-
-        </div>
+        </form>
 
     </div>
 
-    <script>
-        const form = document.getElementById('optimizationForm');
-        const logOutput = document.getElementById('logs');
-        const stopButton = document.getElementById("stop-process");
-        const startButton = document.getElementById("start-process");
+    <!-- Logs bên phải -->
+    <div class="col-md-6 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="text-secondary">Kết quả</h2>
+            <button id="print-log" class="btn btn-light border" onclick="printDiv()">In kết quả</button>
+        </div>
+        <div id="logs" class="border rounded p-3 bg-light"></div>
+    </div>
+</div>
 
 
-        // Tạo kết nối WebSocket
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const socket = new WebSocket(
-            wsProtocol + window.location.host + '/ws/optimization/log'
-        );
+<script>
+    console.log("cat satttt")
+    const form = document.getElementById('optimizationForm');
+    const logOutput = document.getElementById('logs');
+    const stopButton = document.getElementById("stop-process");
+    const startButton = document.getElementById("start-process");
 
-        socket.onopen = function () {
-            console.log("WebSocket connection established.");
-        };
 
-        // Nhận log từ WebSocket và hiển thị
-        socket.onmessage = function (event) {
-            const data = JSON.parse(event.data);
-            message = data["message"];
-            if (message == "!CLEAR!") {
-                logOutput.innerHTML = "";// Append log
-            }
-            else if (message == "!XONGBUOC1!") {
-                stopButton.style.display = "inline-block"; // Hiển thị nút sau khi tìm nghiệm hết các cây sắt
-            }
-            else { logOutput.innerHTML += message; }
-            logOutput.scrollTop = logOutput.scrollHeight;
-        };
+    // Tạo kết nối WebSocket
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const socket = new WebSocket(
+        wsProtocol + window.location.host + '/ws/optimization/log'
+    );
 
-        socket.onclose = function () {
-            console.log("WebSocket connection closed.");
-        };
+    socket.onopen = function () {
+        console.log("WebSocket connection established.");
+    };
 
-        socket.onerror = function (error) {
-            console.error("WebSocket error: ", error);
-        };
+    // Nhận log từ WebSocket và hiển thị
+    socket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        message = data["message"];
+        if (message == "!CLEAR!") {
+            logOutput.innerHTML = "";// Append log
+        }
+        else if (message == "!XONGBUOC1!") {
+            stopButton.style.display = "inline-block"; // Hiển thị nút sau khi tìm nghiệm hết các cây sắt
+        }
+        else { logOutput.innerHTML += message; }
+        logOutput.scrollTop = logOutput.scrollHeight;
+    };
 
-        // Lưu dữ liệu form vào localStorage mỗi khi có thay đổi
-        form.addEventListener('input', function () {
-            const formData = new FormData(form);
+    socket.onclose = function () {
+        console.log("WebSocket connection closed.");
+    };
 
-            formData.forEach((value, key) => {
-                localStorage.setItem(key, value);
-            });
+    socket.onerror = function (error) {
+        console.error("WebSocket error: ", error);
+    };
+
+    // Lưu dữ liệu form vào localStorage mỗi khi có thay đổi
+    form.addEventListener('input', function () {
+        const formData = new FormData(form);
+
+        formData.forEach((value, key) => {
+            localStorage.setItem(key, value);
         });
+    });
 
-        // Khi trang được tải lại, khôi phục dữ liệu từ localStorage
-        window.addEventListener('DOMContentLoaded', () => {
-            const formData = new FormData(form);
+    // Khi trang được tải lại, khôi phục dữ liệu từ localStorage
+    window.addEventListener('DOMContentLoaded', () => {
+        const formData = new FormData(form);
 
-            formData.forEach((value, key) => {
-                const savedValue = localStorage.getItem(key);
-                if (savedValue !== null) {
-                    const field = form.querySelector(`[name="${key}"]`);
-                    if (field) {
-                        field.value = savedValue;
-                    }
-                }
-            });
-        });
-
-        form.addEventListener("keydown", function (event) {  // Xử lí trường hợp Kki nhấn nút Enter
-            if (event.key === "Enter") {
-                event.preventDefault(); // Ngăn không cho form tự động submit
-
-                // Kiểm tra nút nào đang hiển thị
-                if (startButton.style.display !== "none") {
-                    startButton.click(); // Kích hoạt nút "Tối ưu hóa"
-                } else if (stopButton.style.display !== "none") {
-                    stopButton.click(); // Kích hoạt nút "Dừng giải"
+        formData.forEach((value, key) => {
+            const savedValue = localStorage.getItem(key);
+            if (savedValue !== null) {
+                const field = form.querySelector(`[name="${key}"]`);
+                if (field) {
+                    field.value = savedValue;
                 }
             }
         });
+    });
 
-        let formDataGlobal = {}; // Biến toàn cục để lưu dữ liệu form
+    form.addEventListener("keydown", function (event) {  // Xử lí trường hợp Kki nhấn nút Enter
+        if (event.key === "Enter") {
+            event.preventDefault(); // Ngăn không cho form tự động submit
 
-        form.addEventListener('submit', function (e) {
-            console.log("nhấn nút Tối ưu hóa")
-            startButton.style.display = "none";
-            e.preventDefault();
-
-            logOutput.innerHTML = ""
-
-            formDataGlobal = {
-                length: form.length.value,
-                te_dau_sat: parseInt(form.te_dau_sat.value),
-                segment_sizes: form.segment_sizes.value.split(/[\s,]+/).filter(Boolean).map(Number),
-                demands: form.demands.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
-                blade_width: parseFloat(form.blade_width.value),
-                factors: form.factors.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
-                max_manual_cuts: parseInt(form.max_manual_cuts.value),
-                max_stock_over: parseInt(form.max_stock_over.value)
-            };
-
-            fetch("{% url 'optimize' %}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify(formDataGlobal),
-            })
-                .then(response => response.json())
-                .then(data => {
-                    // console.log(data);
-                    // if (data.status == "success"){
-                    //     stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
-                    // }
-                    stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
-                    startButton.style.display = "inline-block";
-                })
-                .catch(error => {
-                    stopButton.style.display = "none";  // Ẩn nút dừng nếu có lỗi
-                    startButton.style.display = "inline-block";
-
-                });
-        });
-
-        function stopServer() {
-            stopButton.style.display = "none";  // Ẩn nút dừng ngay khi bấm nút
-
-            fetch('http://127.0.0.1:8383/trigger-stop', {
-                method: 'GET'
-            })
-                .then(response => response.text())
-                .then(data => console.log(data))
-                .catch(error => console.log('Error:', error));
+            // Kiểm tra nút nào đang hiển thị
+            if (startButton.style.display !== "none") {
+                startButton.click(); // Kích hoạt nút "Tối ưu hóa"
+            } else if (stopButton.style.display !== "none") {
+                stopButton.click(); // Kích hoạt nút "Dừng giải"
+            }
         }
+    });
 
-        function printDiv() {
-            let divContents = document.getElementById("logs").innerText; // Lấy nội dung dạng text để giữ nguyên khoảng trắng
-            let screenWidth = window.screen.width;   // Lấy chiều rộng màn hình
-            let screenHeight = window.screen.height; // Lấy chiều cao màn hình
+    let formDataGlobal = {}; // Biến toàn cục để lưu dữ liệu form
 
-            let printWindow = window.open('', '', `width=${screenWidth}, height=${screenHeight}, top=0, left=0`);
-            printWindow.document.open();
-            printWindow.document.write(`
-        <html>
-        <head>
-            <title>In cắt sắt</title>
-            <style>
-                body { font-family: Arial, sans-serif; }
-                h2 { color: #333; margin-bottom: 10px; }
-                pre { white-space: pre-wrap; font-size: 16px; word-wrap: break-word; line-height: 1.8; }
-            </style>
-        </head>
-        <body>
-            <h2>Sắt ${formDataGlobal.length}mm || Cắt ${formDataGlobal.segment_sizes} đoạn || Lưỡi ${formDataGlobal.blade_width}mm || Tề đầu sắt ${formDataGlobal.te_dau_sat}mm</h2>
-            <pre>${divContents}</pre>
-        </body>
-        </html>
-    `);
-            printWindow.document.close();
-            printWindow.print();
-        }
+    form.addEventListener('submit', function (e) {
+        console.log("nhấn nút Tối ưu hóa")
+        startButton.style.display = "none";
+        e.preventDefault();
 
-    </script>
+        logOutput.innerHTML = ""
 
-</body>
+        formDataGlobal = {
+            length: form.length.value,
+            te_dau_sat: parseInt(form.te_dau_sat.value),
+            segment_sizes: form.segment_sizes.value.split(/[\s,]+/).filter(Boolean).map(Number),
+            demands: form.demands.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
+            blade_width: parseFloat(form.blade_width.value),
+            factors: form.factors.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
+            max_manual_cuts: parseInt(form.max_manual_cuts.value),
+            max_stock_over: parseInt(form.max_stock_over.value)
+        };
 
-</html>
+        fetch("{% url 'cat_sat:optimize' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(formDataGlobal),
+        })
+            .then(response => response.json())
+            .then(data => {
+                // console.log(data);
+                // if (data.status == "success"){
+                //     stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
+                // }
+                stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
+                startButton.style.display = "inline-block";
+            })
+            .catch(error => {
+                stopButton.style.display = "none";  // Ẩn nút dừng nếu có lỗi
+                startButton.style.display = "inline-block";
+
+            });
+    });
+
+    function stopServer() {
+        stopButton.style.display = "none";  // Ẩn nút dừng ngay khi bấm nút
+
+        fetch('http://127.0.0.1:8383/trigger-stop', {
+            method: 'GET'
+        })
+            .then(response => response.text())
+            .then(data => console.log(data))
+            .catch(error => console.log('Error:', error));
+    }
+
+    function printDiv() {
+        let divContents = document.getElementById("logs").innerText; // Lấy nội dung dạng text để giữ nguyên khoảng trắng
+        let screenWidth = window.screen.width;   // Lấy chiều rộng màn hình
+        let screenHeight = window.screen.height; // Lấy chiều cao màn hình
+
+        let printWindow = window.open('', '', `width=${screenWidth}, height=${screenHeight}, top=0, left=0`);
+        printWindow.document.open();
+        printWindow.document.write(`
+    <html>
+    <head>
+        <title>In cắt sắt</title>
+        <style>
+            body { font-family: Arial, sans-serif; }
+            h2 { color: #333; margin-bottom: 10px; }
+            pre { white-space: pre-wrap; font-size: 16px; word-wrap: break-word; line-height: 1.8; }
+        </style>
+    </head>
+    <body>
+        <h2>Sắt ${formDataGlobal.length}mm || Cắt ${formDataGlobal.segment_sizes} đoạn || Lưỡi ${formDataGlobal.blade_width}mm || Tề đầu sắt ${formDataGlobal.te_dau_sat}mm</h2>
+        <pre>${divContents}</pre>
+    </body>
+    </html>
+`);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+</script>
+{% endblock %}
