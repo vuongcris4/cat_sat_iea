@@ -3,7 +3,9 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.group_name = "log_gurobi_solver"
+        self.app_name = self.scope['url_route']['kwargs']['app_name']
+        self.group_name = f"log_gurobi_solver_{self.app_name}"  # WebSocket group theo app
+
         await self.channel_layer.group_add(
             self.group_name,
             self.channel_name

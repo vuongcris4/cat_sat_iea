@@ -39,9 +39,10 @@
 
 
     // Tạo kết nối WebSocket
+    const appName = "{{ request.resolver_match.namespace }}";  // Lấy tên app từ Django
     const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
     const socket = new WebSocket(
-        wsProtocol + window.location.host + '/ws/optimization/log'
+        wsProtocol + window.location.host + `/ws/${appName}/log/`
     );
 
     socket.onopen = function () {

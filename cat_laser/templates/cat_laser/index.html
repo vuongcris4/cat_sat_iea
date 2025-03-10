@@ -1,7 +1,70 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h3>MC Laser</h3>
-<p>updating</p>
-<!-- Bạn sẽ bổ sung form laser tương tự như cat_sat khi cần -->
+<div class="container">
+    <h3>MC Laser</h3>
+    <form id="laserOptimizationForm" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <!-- Bảng chọn lưỡi mài -->
+        <div class="mt-3">
+            <h5>Chọn loại lưỡi mài</h5>
+            <table class="table table-bordered" id="bladeSelectionTable">
+                <thead>
+                    <tr>
+                        <th>Kích thước đoạn (mm)</th>
+                        <th>Loại lưỡi mài</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Tìm phương án cắt Laser</button>
+    </form>
+
+    <!-- Kết quả -->
+    <div id="logs" class="border rounded p-3 bg-light mt-4"></div>
+</div>
+
+<script>
+    document.getElementById('segment_sizes_input').addEventListener('input', function () {
+        let segmentSizes = this.value.split(/[\s,]+/).filter(Boolean);
+        let tableBody = document.querySelector('#bladeSelectionTable tbody');
+        tableBody.innerHTML = '';
+
+        segmentSizes.forEach(size => {
+            let row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${size}</td>
+                <td>
+                    <select class="form-select blade-type">
+                        <option value="1">MC Laser</option>
+                        <option value="3">MCTĐ</option>
+                    </select>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    });
+
+    document.getElementById('laserOptimizationForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        let formData = new FormData(this);
+        let bladeTypes = Array.from(document.querySelectorAll('.blade-type')).map(select => select.value);
+        formData.append('blade_types', bladeTypes.join(','));
+
+        fetch("{% url 'cat_laser:optimize' %}", {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('logs').innerHTML = data.message;
+            })
+            .catch(error => console.error('Error:', error));
+    });
+</script>
 {% endblock %}

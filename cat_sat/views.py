@@ -44,7 +44,7 @@ def stop_server(request):
 def optimize(request):
     if request.method == 'POST':
         try:
-            sys.stdout = TeeStream("log_gurobi_solver") # Chuyển print cmd tới WebSocket
+            sys.stdout = TeeStream("log_gurobi_solver_cat_sat") # Chuyển print cmd tới WebSocket
 
             data = json.loads(request.body) # lấy nội dung từ fetch post html: JSON.stringify(data)
 
