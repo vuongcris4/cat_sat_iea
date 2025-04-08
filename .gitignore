@@ -1,3 +1,9 @@
 myenv/
 db.sqlite3
 pattern_cache/
+cat_laser/__pycache__/
+cat_sat/__pycache__/
+iea_project/__pycache__/
+*.pyc
+*.pyo
+*.pyd
