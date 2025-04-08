@@ -1,72 +1,55 @@
+# cat_laser/views.py
 from django.shortcuts import render
 from django.http import JsonResponse
+# from django.views.decorators.csrf import csrf_exempt # Use carefully or handle CSRF properly
 import json
-import numpy as np
-from ortools.sat.python import cp_model
+import time
+import sys 
+
 from .forms import OptimizationLaserForm
+from .optimization_logic import *
+from .utils import do_day_luoi_cua
+from .optimization_logic import generate_patters, solve_patterns
+
+# Use the same fixed group name as the consumer
+SHARED_GROUP_NAME = "log_gurobi_solver_cat_laser"
+tee_stream = TeeStream(SHARED_GROUP_NAME)
 
 def index(request):
     form = OptimizationLaserForm()
-    return render(request, 'cat_laser/index.html', {'form': form})
+    context = {'form': form}
+    return render(request, 'cat_laser/index.html', context)
 
+# @csrf_exempt # Simplifies testing; implement proper CSRF for production fetch POSTs
 def optimize(request):
     if request.method == 'POST':
-        data = request.POST
-        length = int(data['length'])
-        segment_sizes = list(map(float, data['segment_sizes'].split(',')))
-        demands = list(map(int, data['demands'].split(',')))
-        blade_width_mctd = int(data['blade_width_mctd'])
-        max_stock_over = int(data['max_stock_over'])
-        blade_types = list(map(int, data['blade_types'].split(',')))
+        try:
+            sys.stdout = tee_stream
+            sys.stderr = tee_stream
+            # Assume JSON data from fetch
+            data = json.loads(request.body)
 
-        # Xử lý tối ưu hóa OR-Tools
-        solutions, optimal_x = optimize_cutting(length, segment_sizes, demands, blade_types, max_stock_over)
+            LENGTH = int(data['length'])
+            KICH_THUOC_DOAN = list(map(float, data['segment_sizes']))
+            SL_CAT = list(map(int, data['demands']))
+            k_factors = do_day_luoi_cua(KICH_THUOC_DOAN, data['blade_width_mctd'])
+            SO_LUONG_TON_KHO = int(data['max_stock_over'])     
 
-        if solutions:
-            return JsonResponse({"status": "success", "message": format_solutions(solutions, optimal_x)})
-        else:
-            return JsonResponse({"status": "error", "message": "Không tìm thấy giải pháp tối ưu."})
-    return JsonResponse({"status": "error", "message": "Phương thức không hợp lệ."}, status=400)
+            # KICH_THUOC_DOAN = [2360.8, 1684.8, 1289.2, 1162.2, 565, 46]
+            # k_factors = [1, 1, 1, 1, 3, 3]
+            # LENGTH = 5850
+            # SL_CAT = [600, 1200, 1200, 600, 1200, 1200]
+            # SO_LUONG_TON_KHO = 20
 
-def optimize_cutting(length, segment_sizes, demands, blade_types, max_stock_over):
-    model = cp_model.CpModel()
-    scaled_length = length * 10
-    scaled_segments = [int(size * 10) for size in segment_sizes]
-    scaled_blade = [int(bt * 10) for bt in blade_types]
+            print("Đang tìm các patterns cho 1 cây sắt...<br>")
+            solutions = generate_patters(KICH_THUOC_DOAN, k_factors, LENGTH)
+            print("Đang giải phương trình.....<br>")
+            print("Vui lòng đợi tối đa 1 phút.....<br>")
+            solve_patterns(solutions, LENGTH, KICH_THUOC_DOAN, SL_CAT, SO_LUONG_TON_KHO)
 
-    x = [model.NewIntVar(0, length // min(segment_sizes), f'x_{i}') for i in range(len(segment_sizes))]
-    total_length_used = sum(x[i] * (scaled_segments[i] + scaled_blade[i]) for i in range(len(segment_sizes)))
 
-    model.Add(total_length_used >= int(scaled_length * 0.985))
-    model.Add(total_length_used <= scaled_length - 150)
-
-    solver = cp_model.CpSolver()
-    solver.parameters.enumerate_all_solutions = True
-
-    class SolutionCollector(cp_model.CpSolverSolutionCallback):
-        def __init__(self, x_vars):
-            super().__init__()
-            self._x_vars = x_vars
-            self.solutions = []
-
-        def on_solution_callback(self):
-            solution = [self.Value(var) for var in self._x_vars]
-            total_used = self.Value(total_length_used) / 10
-            self.solutions.append((total_used, solution))
-
-        def get_solutions(self):
-            return sorted(self.solutions, reverse=True, key=lambda s: s[0])
-
-    collector = SolutionCollector(x)
-    solver.Solve(model, collector)
-    return collector.get_solutions(), None
-
-def format_solutions(solutions, optimal_x):
-    result = f"🔹 Tổng số nghiệm tìm được: {len(solutions)}<br>"
-    for i, (total_used, solution) in enumerate(solutions[:5], start=1):
-        result += f"🔸 Nghiệm {i}: (Tổng dài dùng: {total_used} mm)<br>"
-        for size, count in zip(segment_sizes, solution):
-            if count > 0:
-                result += f"- {size} mm: {count} lần cắt<br>"
-        result += "-" * 40 + "<br>"
-    return result
+            return JsonResponse({
+                "status": "success",
+            }, status=200)
+        except Exception as e:
+            print(e)
