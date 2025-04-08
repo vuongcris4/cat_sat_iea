@@ -35,7 +35,7 @@ class OptimizationLaserForm(forms.Form):
     )
 
     laser_max_stock_over = forms.IntegerField(
-        label="Số lượng được phép cắt dư tối đa (cho mỗi loại đoạn)",
+        label="Tồn kho tối đa (cho mỗi loại đoạn)",
         initial=3,
         min_value=0,
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
