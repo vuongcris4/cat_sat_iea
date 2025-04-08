@@ -1,4 +1,4 @@
-from ortools.linear_solver import pywraplp
+from ortools.linear_solver import pywraplp # type: ignore
 
 # Định nghĩa các thông số
 stock_length = 100  # Chiều dài thanh gỗ
