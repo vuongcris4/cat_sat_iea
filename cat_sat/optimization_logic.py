@@ -82,6 +82,7 @@ class SteelCuttingOptimizer:
             model = gp.Model("Steel Cutting Optimization")
             model.setParam('OutputFlag', 0) # Tắt log mặc định ra CMD
 
+
             variables = []  # biến x1, x2, x3, x4
             # Ràng buộc 0<=x<=30
             for i in range(len(self.segment_sizes)):
@@ -147,6 +148,9 @@ class SteelCuttingOptimizer:
         k = 30  # Ma trận số bó sắt
 
         model = gp.Model("Matrix Optimization")
+        # model.setParam('TimeLimit', 60)  # Stop after 60 seconds
+        model.setParam('MIPGap', 0.025)  # Stop when relative gap is below 2.5%
+
         x = model.addVars(n, k, vtype=GRB.INTEGER, name="x")    # Biến quyết định: x_ij
         # Biến nhị phân z_ijr để chọn giá trị của x_ij từ factors
         z = model.addVars(n, k, len(self.factors), vtype=GRB.BINARY, name="z")
@@ -221,7 +225,7 @@ class SteelCuttingOptimizer:
                     for num, count in counts.items():
                         print(f"\t{num} cây/bó: {count} lần<br>")
                         if num == 1:
-                            tong_cat_tay += 1
+                            tong_cat_tay += count
                         tong_lan_cat += count
             
             tong_sat = sum(sum(x_optimal))
