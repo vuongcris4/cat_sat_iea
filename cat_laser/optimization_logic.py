@@ -34,7 +34,7 @@ class TeeStream:
     #     self.original_stream.flush()    # Ensure all data in the buffer is written to the original stream
 
 # KICH_THUOC_DOAN, do_day_luoi_mai, LENGTH
-def generate_patters(a, k, length):
+def generate_patterns(a, k, length):
     cache_key = generate_cache_key(a, k, length)
     solutions = load_from_cache(cache_key)
     if not solutions is None:
@@ -112,10 +112,10 @@ def generate_patters(a, k, length):
             self.b0_ = b0
             self.b1_ = b1
             self.b2_ = b2
-            self.solutions_ = []
+            self.solution_dict_ = {}  # Use a dictionary instead of a set
 
         def OnSolutionCallback(self):
-            solution = np.array([self.Value(v) for v in self.variables_])
+            solution = tuple(self.Value(v) for v in self.variables_)
             special_values = [self.Value(self.variables_[i]) for i in self.special_indices_]
             num_nonzero = sum(1 for val in special_values if val > 0)
             if num_nonzero == 0:
@@ -124,20 +124,23 @@ def generate_patters(a, k, length):
                 c = 0
             else:
                 c = 15
-            tong_chieu_dai_cat_duoc = sum((a + k) * solution) # (kich_thuoc_doan + hao_hut) * so_luong_doan
+            tong_chieu_dai_cat_duoc = sum((a + k) * solution)
             if 0 < tong_chieu_dai_cat_duoc + c <= length:
-                # Xác định trường hợp b0, b1, b2
                 if self.Value(self.b0_):
                     case = "c=60"
                 elif self.Value(self.b1_):
                     case = "c=0"
                 else:
                     case = "c=15"
-                self.solutions_.append((tong_chieu_dai_cat_duoc, solution, case))
+                # Only store if this solution is new or has a larger tong_chieu_dai_cat_duoc
+                if solution not in self.solution_dict_ or self.solution_dict_[solution][0] < tong_chieu_dai_cat_duoc:
+                    self.solution_dict_[solution] = (tong_chieu_dai_cat_duoc, case)
 
         def get_sorted_solutions(self):
-            return sorted(self.solutions_, reverse=True, key=lambda s: s[0])
-
+            solutions = [(tong_chieu_dai, list(solution), case) 
+                        for solution, (tong_chieu_dai, case) in self.solution_dict_.items()]
+            return sorted(solutions, reverse=True, key=lambda s: s[0])
+    
     # 10. Tìm tất cả nghiệm
     solver = cp_model.CpSolver()
     solver.parameters.log_search_progress = True # hiển thị log chi tiết
@@ -157,7 +160,7 @@ def generate_patters(a, k, length):
     return solutions
 
 
-# solutions: ma trận giải ra được từ generate_patters
+# solutions: ma trận giải ra được từ generate_patterns
 def solve_patterns(solutions, LENGTH, KICH_THUOC_DOAN, SL_CAT, SO_LUONG_TON_KHO=10):
     # Chuyển danh sách solutions thành ma trận
     patterns = _extract_solution_matrix(solutions)
@@ -249,6 +252,7 @@ def solve_patterns(solutions, LENGTH, KICH_THUOC_DOAN, SL_CAT, SO_LUONG_TON_KHO=
 def _extract_solution_matrix(solutions, num_sol=-1):
     """Trích xuất ma trận từ danh sách solutions."""
     solution_matrix = np.array([list(solution[1]) for solution in solutions[:num_sol]])
+    print(solution_matrix)
     return solution_matrix.T
 
 

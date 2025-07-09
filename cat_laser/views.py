@@ -9,7 +9,7 @@ import sys
 from .forms import OptimizationLaserForm
 from .optimization_logic import *
 from .utils import do_day_luoi_cua
-from .optimization_logic import generate_patters, solve_patterns
+from .optimization_logic import generate_patterns, solve_patterns
 
 # Use the same fixed group name as the consumer
 SHARED_GROUP_NAME = "log_gurobi_solver_cat_laser"
@@ -42,7 +42,7 @@ def optimize(request):
             # SO_LUONG_TON_KHO = 20
 
             print("Đang tìm các patterns cho 1 cây sắt...<br>")
-            solutions = generate_patters(KICH_THUOC_DOAN, k_factors, LENGTH)
+            solutions = generate_patterns(KICH_THUOC_DOAN, k_factors, LENGTH)
             print("Đang giải phương trình.....<br>")
             print("Vui lòng đợi tối đa 1 phút.....<br>")
             solve_patterns(solutions, LENGTH, KICH_THUOC_DOAN, SL_CAT, SO_LUONG_TON_KHO)
