@@ -12,13 +12,13 @@ from .utils import do_day_luoi_cua
 from .optimization_logic import generate_patterns, solve_patterns
 
 # Use the same fixed group name as the consumer
-SHARED_GROUP_NAME = "log_gurobi_solver_cat_laser"
+SHARED_GROUP_NAME = "log_gurobi_solver_cat_laser_roi"
 tee_stream = TeeStream(SHARED_GROUP_NAME)
 
 def index(request):
     form = OptimizationLaserForm()
     context = {'form': form}
-    return render(request, 'cat_laser/index.html', context)
+    return render(request, 'cat_laser_roi/index.html', context)
 
 # @csrf_exempt # Simplifies testing; implement proper CSRF for production fetch POSTs
 def optimize(request):
