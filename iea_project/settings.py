@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'daphne',
     'cat_sat',
     'cat_laser',
+    'cat_laser_roi',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

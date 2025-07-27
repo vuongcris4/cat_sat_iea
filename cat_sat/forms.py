@@ -8,7 +8,8 @@ class OptimizationForm(forms.Form):
         choices=LENGTH_CHOICES,
         label="Chiều dài thanh sắt (mm)",
         initial=5850,
-        widget=forms.Select(attrs={'class': 'form-control'})
+        # widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
 
     # # Thêm HTML cho datalist vào form

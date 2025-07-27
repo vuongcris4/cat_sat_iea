@@ -9,6 +9,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('cat_sat/', include(('cat_sat.urls', 'cat_sat'), namespace='cat_sat')),
     path('cat_laser/', include(('cat_laser.urls', 'cat_laser'), namespace='cat_laser')),
+    path('cat_laser_roi/', include(('cat_laser_roi.urls', 'cat_laser_roi'), namespace='cat_laser_roi')),
 
     # Trang chính tự động chuyển hướng đến /cat_sat/
     path('', home_redirect, name='home'),
