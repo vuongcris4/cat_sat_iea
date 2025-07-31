@@ -5,9 +5,11 @@ import os
 import pickle
 import hashlib
 from datetime import datetime
+import time
+import threading
 
 # ===================================================================
-# GIAI ĐOẠN 1
+# GIAI ĐOẠN 1 (Không đổi)
 # ===================================================================
 def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay=6):
     print("⏳ Bắt đầu Giai đoạn 1: Tìm các phương án cắt hiệu quả...<br>")
@@ -26,7 +28,7 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
     model.Add(waste_var == 0).OnlyEnforceIf(is_waste_zero)
     model.Add(waste_var >= doan_thua_cat_tay).OnlyEnforceIf(is_waste_zero.Not())
     solver = cp_model.CpSolver()
-    solver.log_search_progress = True
+    solver.log_search_progress = False
     class SolutionAndLogCollector(cp_model.CpSolverSolutionCallback):
         def __init__(self, variables):
             cp_model.CpSolverSolutionCallback.__init__(self)
@@ -35,8 +37,6 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
         def on_solution_callback(self):
             solution = {v.Name(): self.Value(v) for v in self.__variables}
             self.solutions.append(solution)
-        def on_log_message(self, message: str):
-            print(message)
     solution_collector = SolutionAndLogCollector(counts)
     solver.parameters.enumerate_all_solutions = True
     print("Vui lòng chờ, bộ giải đang tìm kiếm các pattern... (GĐ 1)<br>")
@@ -82,6 +82,29 @@ def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste
         return patterns
 
 # ===================================================================
+# Lớp Timer cho Giai đoạn 2
+# ===================================================================
+class SolverTimer(threading.Thread):
+    def __init__(self, total_time):
+        super().__init__()
+        self.total_time = total_time
+        self.stop_event = threading.Event()
+        self.start_time = None
+        self.daemon = True
+
+    def run(self):
+        self.start_time = time.time()
+        while not self.stop_event.is_set():
+            elapsed = int(time.time() - self.start_time)
+            if elapsed > self.total_time:
+                break
+            print(f"TIMER_UPDATE::{elapsed}::{int(self.total_time)}")
+            time.sleep(1)
+
+    def stop(self):
+        self.stop_event.set()
+
+# ===================================================================
 # GIAI ĐOẠN 2
 # ===================================================================
 def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, demands_list, priorities_list,
@@ -120,113 +143,87 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         model.Add(s <= max_surplus)
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit_seconds
-    solver.log_search_progress = True
-    class LogCallback(cp_model.CpSolverSolutionCallback):
-        def __init__(self):
-            cp_model.CpSolverSolutionCallback.__init__(self)
-        def on_log_message(self, message: str):
-            print(message)
-        def on_solution_callback(self):
-            pass
-    log_callback = LogCallback()
+    solver.log_search_progress = False
     status = cp_model.UNKNOWN
-    print("<br>--- ƯU TIÊN 1: Tối thiểu hóa Hao hụt ---<br>")
-    print("Vui lòng chờ, bộ giải đang tìm kiếm lời giải tối ưu...<br>")
-    model.Minimize(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))))
-    status = solver.Solve(model, log_callback)
-    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        min_waste_found = int(solver.ObjectiveValue())
-        print(f"✅ Mức hao hụt tối thiểu: {min_waste_found:,.0f} mm<br>")
-        model.Add(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))) == min_waste_found)
-    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+    
+    # --- Khởi tạo và chạy Timer duy nhất ---
+    total_time_for_all_steps = time_limit_seconds * 3
+    timer = SolverTimer(total_time_for_all_steps)
+    timer.start()
+    
+    try:
+        print("<br>--- ƯU TIÊN 1: Tối thiểu hóa Hao hụt ---<br>")
+        model.Minimize(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))))
+        status = solver.Solve(model)
+        if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            min_waste_found = int(solver.ObjectiveValue())
+            print(f"✅ Mức hao hụt tối thiểu: {min_waste_found:,.0f} mm<br>")
+            model.Add(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))) == min_waste_found)
+        else:
+            print("...Không tìm thấy lời giải cho Ưu tiên 1, dừng lại.<br>")
+            return # Dừng nếu bước đầu tiên thất bại
+        
         print("<br>--- ƯU TIÊN 2: Tối thiểu hóa Tồn kho ---<br>")
-        print("Vui lòng chờ, bộ giải đang tìm kiếm lời giải tối ưu...<br>")
         model.Minimize(sum(surplus_vars.values()))
-        status = solver.Solve(model, log_callback)
+        status = solver.Solve(model)
         if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             min_surplus_found = int(solver.ObjectiveValue())
             print(f"✅ Mức tồn kho tối thiểu: {min_surplus_found:,.0f} đoạn<br>")
             model.Add(sum(surplus_vars.values()) == min_surplus_found)
-    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE) and use_priority_constraint:
-        print("<br>--- ƯU TIÊN 3: Tối ưu theo Độ ưu tiên ---<br>")
-        print("Vui lòng chờ, bộ giải đang tìm kiếm lời giải tối ưu...<br>")
-        model.Minimize(sum(x[j] * patterns_df.iloc[j]['Priority_Score'] for j in range(len(patterns_df))))
-        status = solver.Solve(model, log_callback)
+        else:
+            print("...Không tìm thấy lời giải cho Ưu tiên 2, dừng lại.<br>")
+            return
 
+        if use_priority_constraint:
+            print("<br>--- ƯU TIÊN 3: Tối ưu theo Độ ưu tiên ---<br>")
+            model.Minimize(sum(x[j] * patterns_df.iloc[j]['Priority_Score'] for j in range(len(patterns_df))))
+            status = solver.Solve(model)
+
+    finally:
+        # Dừng timer sau khi tất cả các bước giải đã xong
+        timer.stop()
+        timer.join()
+
+    # ... (Phần in kết quả không đổi) ...
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         print("!CLEAR!")
         now = datetime.now()
         print(f"<b>Thời gian: {now.strftime('%d/%m/%Y %H:%M:%S')}</b><br>")
-        print(f"<b>Chiều dài cây sắt:</b> {raw_stock_length}mm<br>")
-        
+        print(f"<b>Chiều dài cây sắt thô:</b> {raw_stock_length}mm<br>")
         plan_indices = [j for j in range(len(patterns_df)) if solver.Value(x[j]) > 0]
         plan_counts = [solver.Value(x[j]) for j in plan_indices]
         production_plan = patterns_df.iloc[plan_indices].copy()
         production_plan['SL cây sắt'] = plan_counts
-
         print("<h4>TỔNG KẾT</h4>")
         summary = []
         length_to_name_map = dict(zip(piece_lengths, piece_names))
         for i, length in enumerate(piece_lengths):
             produced = (production_plan[f'{length}mm'] * production_plan['SL cây sắt']).sum()
-            summary.append({
-                "Tên sắt": length_to_name_map.get(length, ""),
-                "Đoạn (mm)": length, 
-                "SL cần (đoạn)": demands_list[i], 
-                "SL cắt (đoạn)": produced, 
-                "Tồn kho (đoạn)": produced - demands_list[i]
-            })
+            summary.append({"Tên sắt": length_to_name_map.get(length, ""),"Đoạn (mm)": length, "SL cần (đoạn)": demands_list[i], "SL cắt (đoạn)": produced, "Tồn kho (đoạn)": produced - demands_list[i]})
         summary_df = pd.DataFrame(summary)
         summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
         print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
-        
         total_bars_used = production_plan['SL cây sắt'].sum()
         final_waste = (production_plan['Hao hụt (mm)'] * production_plan['SL cây sắt']).sum()
-        
         print("<hr>")
         print(f"<b>Tổng số cây sắt cần dùng:</b> {total_bars_used} cây<br>")
         print(f"<b>Tổng hao hụt dài:</b> {final_waste/1000:,.2f}m<br>")
         if total_bars_used > 0:
             print(f"<b>Hao hụt:</b> {final_waste/(raw_stock_length*total_bars_used)*100:.2f}%")
-        
         if use_priority_constraint:
             production_plan = production_plan.sort_values(by=['Priority_Score', 'SL cây sắt'], ascending=[True, True])
             print_plan = production_plan.drop(columns=['Priority_Score'])
         else:
             production_plan = production_plan.sort_values(by='SL cây sắt', ascending=True)
             print_plan = production_plan
-            
         print_plan.insert(0, 'STT', np.arange(1, len(print_plan) + 1))
         cols = [col for col in print_plan.columns if col != 'SL cây sắt'] + ['SL cây sắt']
         print_plan = print_plan[cols]
-        
         print(f"<h4>KẾ HOẠCH CẮT CHI TIẾT ({len(print_plan)} loại)</h4>")
-        
         bold_cols = [col for col in print_plan.columns if 'mm' in col and 'Hao hụt' not in col] + ['SL cây sắt']
-        
         plan_styler = print_plan.style.set_properties(**{'text-align': 'center'})
         plan_styler.set_properties(**{'font-weight': 'bold'}, subset=bold_cols)
         plan_styler.hide(axis="index")
-
-        # Thêm viền đậm bao quanh
-        piece_size_cols = [col for col in print_plan.columns if 'mm' in col and 'Hao hụt' not in col]
-        if piece_size_cols:
-            first_col_idx = print_plan.columns.get_loc(piece_size_cols[0])
-            last_col_idx = print_plan.columns.get_loc(piece_size_cols[-1])
-            border_style = '2px solid black'
-            
-            table_styles = [
-                # Viền trái cho cột đầu tiên (cả header và data)
-                {'selector': f'th.col{first_col_idx}, td.col{first_col_idx}', 'props': [('border-left', border_style)]},
-                # Viền phải cho cột cuối cùng (cả header và data)
-                {'selector': f'th.col{last_col_idx}, td.col{last_col_idx}', 'props': [('border-right', border_style)]},
-                # Viền trên cho tất cả header trong khối
-                {'selector': ', '.join([f'th.col{print_plan.columns.get_loc(c)}' for c in piece_size_cols]), 'props': [('border-top', border_style)]},
-                # Viền dưới cho tất cả các ô ở hàng cuối cùng trong khối
-                {'selector': ', '.join([f'tbody tr:last-child td.col{print_plan.columns.get_loc(c)}' for c in piece_size_cols]), 'props': [('border-bottom', border_style)]}
-            ]
-            plan_styler.set_table_styles(table_styles)
-        
         print(plan_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
     else:
         print("<br>❌ Rất tiếc, không thể tìm ra kế hoạch sản xuất phù hợp.")

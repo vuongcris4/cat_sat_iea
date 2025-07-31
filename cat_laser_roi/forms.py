@@ -16,6 +16,6 @@ class OptimizationForm(forms.Form):
         initial=True
     )
     time_limit_minutes = forms.IntegerField(
-        label="Thời gian chạy tối đa (phút)", 
+        label="Thời gian chạy tối đa (3x phút)", 
         initial=2
     )

@@ -20,7 +20,10 @@
 
     <div class="col-md-6 d-flex flex-column">
         <div class="d-flex justify-content-between align-items-center">
-            <h2 class="text-secondary">Kết quả</h2>
+            <div class="d-flex align-items-center">
+                <h2 class="text-secondary mb-0">Kết quả</h2>
+                <div id="status-display" class="text-primary fw-bold ms-3"></div>
+            </div>
             <button id="print-log" class="btn btn-light border" onclick="printDiv()">In kết quả</button>
         </div>
         <div id="logs" class="border rounded p-3 bg-light" style="flex-grow: 1; overflow-y: auto; white-space: pre-wrap; font-family: monospace;"></div>
@@ -31,6 +34,7 @@
     const form = document.getElementById('optimizationForm');
     const logOutput = document.getElementById('logs');
     const startButton = document.getElementById("start-process");
+    const statusDisplay = document.getElementById("status-display");
     const container = document.getElementById('handsontable-container');
 
     // --- LƯU & KHÔI PHỤC TRẠNG THÁI FORM ---
@@ -95,10 +99,16 @@
     socket.onopen = () => { logOutput.innerHTML = ""; console.log("WebSocket connected."); }
     socket.onclose = () => console.log("WebSocket disconnected.");
     socket.onerror = (error) => console.error("WebSocket error: ", error);
+    
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         const message = data.message;
-        if (message === "!CLEAR!") {
+        if (message.startsWith("TIMER_UPDATE::")) {
+            const parts = message.split('::');
+            const elapsed = parts[1];
+            const total = parts[2];
+            statusDisplay.innerText = `-> Thời gian: ${elapsed}s / ${total}s`;
+        } else if (message === "!CLEAR!") {
             logOutput.innerHTML = "";
         } else {
             logOutput.insertAdjacentHTML('beforeend', message);
@@ -108,7 +118,7 @@
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         startButton.disabled = true;
-        startButton.textContent = "Đang xử lý...";
+        statusDisplay.innerText = "Đang xử lý...";
         const tableData = hot.getData().filter(row => row.some(cell => cell !== null && cell !== '' && cell !== undefined));
         const payload = {
             stock_length: parseInt(document.getElementById('id_stock_length').value),
@@ -124,16 +134,16 @@
         })
         .catch(error => {
             console.error(error);
+            statusDisplay.innerText = "Đã xảy ra lỗi!";
             logOutput.innerHTML += "Đã xảy ra lỗi khi gửi yêu cầu: " + error;
         })
         .finally(() => {
             startButton.disabled = false;
-            startButton.textContent = "Tìm phương án cắt sắt";
+            statusDisplay.innerText = "";
         });
     });
 
     function printDiv() {
-        // ... (print function không đổi)
         let divContents = document.getElementById("logs").innerHTML;
         const printableContents = divContents.replace(/\\n/g, '<br>');
         const printWindow = window.open('', '', 'height=800,width=1200');

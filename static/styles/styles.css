@@ -1,127 +1,80 @@
-/* --- GLOBAL STYLES --- */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f8f9fa;
-    color: #212529;
-    line-height: 1.6;
-}
+{% extends 'base.html' %}
 
-/* --- HEADER & NAVIGATION --- */
-header.container-fluid {
-    border-bottom: 1px solid #dee2e6;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-}
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h2 class="text-primary" style="margin-top: 0;">Máy cắt laser (cắt rời)</h2>
+        <form id="optimizationForm" method="post" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">{{ form.stock_length.label_tag }} {{ form.stock_length }}</div>
+            <div class="mb-3">{{ form.max_surplus.label_tag }} {{ form.max_surplus }}</div>
+            <div class="mb-3">{{ form.time_limit_minutes.label_tag }} {{ form.time_limit_minutes }}</div>
+            <div class="form-check mb-3">{{ form.use_priority_constraint }} {{ form.use_priority_constraint.label_tag }}</div>
+            <h4 class="mt-4">Chi tiết các đoạn cắt:</h4>
+            <div id="handsontable-container" class="border rounded"></div>
+            <div class="button-container mt-3">
+                <button id="start-process" type="submit" class="btn btn-primary">Tìm phương án cắt sắt</button>
+            </div>
+            </form>
+    </div>
 
-.nav a {
-    font-weight: 500;
-    color: #007bff;
-    padding: 8px 16px;
-    transition: background-color 0.2s ease-in-out;
-}
+    <div class="col-md-6 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <h2 class="text-secondary mb-0">Kết quả</h2>
+                <div id="status-display" class="text-primary fw-bold ms-3"></div>
+            </div>
+            <button id="print-log" class="btn btn-light border" onclick="printDiv()">In kết quả</button>
+        </div>
+        <div id="logs" class="border rounded p-3 bg-light" style="flex-grow: 1; overflow-y: auto; white-space: pre-wrap; font-family: monospace;"></div>
+    </div>
+</div>
 
-.nav a.active {
-    background-color: #007bff;
-    color: white !important;
-    border-radius: 5px;
-}
+<script>
+    const form = document.getElementById('optimizationForm');
+    const logOutput = document.getElementById('logs');
+    const startButton = document.getElementById("start-process");
+    const statusDisplay = document.getElementById("status-display");
+    const container = document.getElementById('handsontable-container');
 
-/* --- MAIN CONTENT & LAYOUT --- */
-main.container {
-    max-width: 1600px;
-}
+    // --- LƯU & KHÔI PHỤC TRẠNG THÁI FORM ---
+    // ... (code không đổi) ...
 
-h2, h4 {
-    color: #495057;
-}
-h4 {
-        margin-top: 1rem;
-    border-bottom: 1px solid #e9ecef;
-    padding-bottom: 0.5rem;
-}
+    // --- TÍCH HỢP HANDSONTABLE ---
+    // ... (code không đổi) ...
 
+    // --- WEBSOCKET & SUBMIT LOGIC ---
+    // ... (code không đổi, đã đúng) ...
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const socket = new WebSocket(wsProtocol + window.location.host + '/ws/cat_laser_roi/log/');
+    socket.onopen = () => { logOutput.innerHTML = ""; console.log("WebSocket connected."); }
+    socket.onclose = () => console.log("WebSocket disconnected.");
+    socket.onerror = (error) => console.error("WebSocket error: ", error);
+    
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const message = data.message;
+        if (message.startsWith("TIMER_UPDATE::")) {
+            const parts = message.split('::');
+            const elapsed = parts[1];
+            const total = parts[2];
+            statusDisplay.innerText = `-> Thời gian: ${elapsed}s / ${total}s`;
+        } else if (message === "!CLEAR!") {
+            logOutput.innerHTML = "";
+        } else {
+            logOutput.insertAdjacentHTML('beforeend', message);
+        }
+    };
 
-/* --- FORM STYLES --- */
-form label {
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-    display: block;
-}
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        startButton.disabled = true;
+        statusDisplay.innerText = "Đang xử lý...";
+        // ... (code còn lại không đổi) ...
+    });
 
-form input[type="number"], form input[type="text"] {
-    width: 100%;
-        padding: 0.25rem 0.75rem; /* Giảm padding dọc tối đa */
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-form input[type="number"]:focus, form input[type="text"]:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.form-check-label {
-    margin-left: 0.5rem;
-}
-
-
-/* --- BUTTONS --- */
-.btn-primary {
-    font-weight: 500;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-}
-
-
-/* --- LOGS PANEL & TABLES --- */
-#logs {
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    font-family: "SF Mono", "Courier New", monospace;
-    font-size: 0.9rem;
-    white-space: pre-wrap;
-    line-height: 1.25; /* Giảm khoảng cách dòng triệt để hơn */
-    overflow-y: auto;
-        max-height: 65vh;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-#logs table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-}
-
-#logs th, #logs td {
-    border: 1px solid #dee2e6 !important; /* Thêm !important để đảm bảo viền luôn hiện */
-    padding: 0.5rem 0.75rem;
-    text-align: left;
-    vertical-align: middle;
-}
-
-#logs th {
-    background-color: #f8f9fa;
-    font-weight: 500;
-}
-
-#logs .table-striped tbody tr:nth-of-type(odd) {
-    background-color: rgba(0, 0, 0, 0.03);
-}
-
-/* --- CUSTOM LOG ELEMENTS --- */
-#logs h4 {
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-    color: #007bff;
-    border: none;
-}
-
-#logs hr {
-    border-top: 1px solid #dee2e6;
-        margin: 1rem 0;
-}
+    function printDiv() {
+        // ... (code không đổi) ...
+    }
+</script>
+{% endblock %}
