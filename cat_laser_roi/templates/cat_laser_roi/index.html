@@ -61,16 +61,26 @@
     let tableData = JSON.parse(localStorage.getItem('handsontable_data'));
     if (!tableData) {
         tableData = [
-            [470, 3200, 1], [460, 1600, 2], [445, 3200, 4], [430, 3200, 2],
-            [425, 1600, 1], [190, 3200, 1], [25, 3200, 0]
+            ['Sắt A', 470, 3200, 1],
+            ['Sắt B', 460, 1600, 2],
+            ['Sắt C', 445, 3200, 4],
+            ['Sắt D', 430, 3200, 2],
+            ['Sắt E', 425, 1600, 1],
+            ['Sắt F', 190, 3200, 1],
+            ['Sắt G', 25, 3200, 0]
         ];
     }
 
     const hot = new Handsontable(container, {
         data: tableData,
-        colHeaders: ['Kích thước (mm)', 'SL Cần', 'Priority'],
-        columns: [{ type: 'numeric' }, { type: 'numeric' }, { type: 'numeric' }],
-                rowHeaders: true, width: '100%', height: 240, /* Giảm chiều cao */ licenseKey: 'non-commercial-and-evaluation',
+        colHeaders: ['Tên sắt', 'Kích thước (mm)', 'SL Cần', 'Priority'],
+        columns: [
+            { type: 'text' },
+            { type: 'numeric' }, 
+            { type: 'numeric' }, 
+            { type: 'numeric' }
+        ],
+        rowHeaders: true, width: '100%', height: 240, licenseKey: 'non-commercial-and-evaluation',
         minSpareRows: 1, contextMenu: true, stretchH: 'all',
         afterChange: (changes, source) => {
             if (source !== 'loadData') {
@@ -91,9 +101,8 @@
         if (message === "!CLEAR!") {
             logOutput.innerHTML = "";
         } else {
-            logOutput.insertAdjacentHTML('beforeend', message); // Bỏ \\n ở đây
+            logOutput.insertAdjacentHTML('beforeend', message);
         }
-
     };
 
     form.addEventListener('submit', function (e) {
@@ -124,37 +133,18 @@
     });
 
     function printDiv() {
+        // ... (print function không đổi)
         let divContents = document.getElementById("logs").innerHTML;
         const printableContents = divContents.replace(/\\n/g, '<br>');
         const printWindow = window.open('', '', 'height=800,width=1200');
         printWindow.document.write('<html><head><title>In Kết Quả</title>');
         printWindow.document.write(`<style>
-            body {
-                font-family: Arial, sans-serif;
-                padding: 1rem;
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 1.5rem 0;
-                font-size: 0.9rem;
-            }
-            th, td {
-                border: 1px solid #ccc;
-                padding: 8px;
-                text-align: center;
-                vertical-align: middle;
-            }
-            th {
-                background-color: #f2f2f2;
-                font-weight: bold;
-            }
-            th.row_heading, th.index_name {
-                 text-align: left !important;
-            }
-            hr, h4, b {
-                page-break-after: avoid; /* Tránh ngắt trang sau các thẻ này */
-            }
+            body { font-family: Arial, sans-serif; padding: 1rem; }
+            table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: center; vertical-align: middle; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            th.row_heading, th.index_name { text-align: left !important; }
+            hr, h4, b { page-break-after: avoid; }
         </style>`);
         printWindow.document.write('</head><body>');
         printWindow.document.write(printableContents);

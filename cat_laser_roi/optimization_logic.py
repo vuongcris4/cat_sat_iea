@@ -7,7 +7,7 @@ import hashlib
 from datetime import datetime
 
 # ===================================================================
-# GIAI ĐOẠN 1 (Không đổi)
+# GIAI ĐOẠN 1
 # ===================================================================
 def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay=6):
     print("⏳ Bắt đầu Giai đoạn 1: Tìm các phương án cắt hiệu quả...<br>")
@@ -84,7 +84,7 @@ def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste
 # ===================================================================
 # GIAI ĐOẠN 2
 # ===================================================================
-def solve_phase2(raw_stock_length, patterns_df, piece_lengths, demands_list, priorities_list,
+def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, demands_list, priorities_list,
                  max_surplus, use_priority_constraint=False, time_limit_seconds=120.0):
     print("!CLEAR!")
     print("🚀 Bắt đầu Giai đoạn 2: Tối ưu hóa kế hoạch cắt sắt...<br>")
@@ -156,21 +156,26 @@ def solve_phase2(raw_stock_length, patterns_df, piece_lengths, demands_list, pri
         print("!CLEAR!")
         now = datetime.now()
         print(f"<b>Thời gian: {now.strftime('%d/%m/%Y %H:%M:%S')}</b><br>")
-        print(f"<b>Chiều dài cây sắt thô:</b> {raw_stock_length}mm<br>")
+        print(f"<b>Chiều dài cây sắt:</b> {raw_stock_length}mm<br>")
         
         plan_indices = [j for j in range(len(patterns_df)) if solver.Value(x[j]) > 0]
         plan_counts = [solver.Value(x[j]) for j in plan_indices]
         production_plan = patterns_df.iloc[plan_indices].copy()
         production_plan['SL cây sắt'] = plan_counts
 
-        # --- HIỂN THỊ TỔNG KẾT TRƯỚC ---
         print("<h4>TỔNG KẾT</h4>")
         summary = []
+        length_to_name_map = dict(zip(piece_lengths, piece_names))
         for i, length in enumerate(piece_lengths):
             produced = (production_plan[f'{length}mm'] * production_plan['SL cây sắt']).sum()
-            summary.append({"Đoạn (mm)": length, "SL cần (đoạn)": demands_list[i], "SL cắt (đoạn)": produced, "Tồn kho (đoạn)": produced - demands_list[i]})
+            summary.append({
+                "Tên sắt": length_to_name_map.get(length, ""),
+                "Đoạn (mm)": length, 
+                "SL cần (đoạn)": demands_list[i], 
+                "SL cắt (đoạn)": produced, 
+                "Tồn kho (đoạn)": produced - demands_list[i]
+            })
         summary_df = pd.DataFrame(summary)
-        
         summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
         print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
         
@@ -183,7 +188,6 @@ def solve_phase2(raw_stock_length, patterns_df, piece_lengths, demands_list, pri
         if total_bars_used > 0:
             print(f"<b>Hao hụt:</b> {final_waste/(raw_stock_length*total_bars_used)*100:.2f}%")
         
-        # --- HIỂN THỊ KẾ HOẠCH CẮT SAU ---
         if use_priority_constraint:
             production_plan = production_plan.sort_values(by=['Priority_Score', 'SL cây sắt'], ascending=[True, True])
             print_plan = production_plan.drop(columns=['Priority_Score'])

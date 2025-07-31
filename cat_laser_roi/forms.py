@@ -11,7 +11,7 @@ class OptimizationForm(forms.Form):
         initial=10
     )
     use_priority_constraint = forms.BooleanField(
-        label="Bật chức năng ưu tiên (lọc đoạn >= 60mm & tối ưu theo priority)", 
+        label="Ưu tiên pattern có đoạn cuối khoét lỗ ít nhất", 
         required=False, 
         initial=True
     )

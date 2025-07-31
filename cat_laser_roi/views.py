@@ -4,23 +4,18 @@ import json
 import sys
 import asyncio
 from channels.layers import get_channel_layer
-# Import LOG_HISTORY từ consumer
 from iea_project.consumers import LOG_HISTORY
 
 from .forms import OptimizationForm
 from .optimization_logic import get_or_calculate_patterns, solve_phase2
 
-# Lớp TeeStream giờ sẽ ghi vào lịch sử
 class TeeStream:
     def __init__(self, websocket_room):
         self.websocket_room = websocket_room
-        # Xóa lịch sử cũ khi bắt đầu
         LOG_HISTORY[self.websocket_room] = []
 
     async def send_message_to_websocket(self, message):
-        # Lưu vào lịch sử
         LOG_HISTORY[self.websocket_room].append(message)
-        # Gửi tới group
         channel_layer = get_channel_layer()
         await channel_layer.group_send(
             self.websocket_room,
@@ -53,9 +48,10 @@ def run_optimization(request):
             time_limit_minutes = data.get('time_limit_minutes')
             pieces_data = data.get('pieces_data')
 
-            piece_lengths = [int(item[0]) for item in pieces_data if item and item[0] is not None]
-            demands_list = [int(item[1]) for item in pieces_data if item and item[1] is not None]
-            priorities_list = [int(item[2]) for item in pieces_data if item and item[2] is not None]
+            piece_names = [str(item[0]) for item in pieces_data if item and item[0] is not None]
+            piece_lengths = [int(item[1]) for item in pieces_data if item and item[1] is not None]
+            demands_list = [int(item[2]) for item in pieces_data if item and item[2] is not None]
+            priorities_list = [int(item[3]) for item in pieces_data if item and item[3] is not None]
 
             patterns_data = get_or_calculate_patterns(
                 stock_length, piece_lengths, 1, 0.015, 3, 7
@@ -65,6 +61,7 @@ def run_optimization(request):
                 solve_phase2(
                     stock_length,
                     patterns_data,
+                    piece_names,
                     piece_lengths,
                     demands_list,
                     priorities_list,
@@ -77,8 +74,8 @@ def run_optimization(request):
 
         except Exception as e:
             error_message = f"Đã xảy ra lỗi trong view: {e}"
-            print(error_message) # Sẽ được gửi qua WebSocket
+            print(error_message)
             return JsonResponse({'status': 'error', 'message': error_message}, status=500)
         finally:
-            sys.stdout = original_stdout # Luôn trả lại stdout gốc
+            sys.stdout = original_stdout
     return JsonResponse({'error': 'Invalid request method'}, status=400)
