@@ -104,6 +104,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         patterns_df['Priority_Score'] = patterns_df.apply(calculate_priority_score, axis=1)
     else:
         print("--- Chế độ ưu tiên đang TẮT (chỉ tối ưu hao hụt và tồn kho) ---<br>")
+        print(f"Sử dụng toàn bộ {len(patterns_df)} patterns đã tìm thấy.<br>")
     if len(patterns_df) == 0:
         print("❌ GĐ 2: Không có pattern nào để xử lý sau khi lọc.<br>")
         return
