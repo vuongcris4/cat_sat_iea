@@ -3,7 +3,7 @@ from django.shortcuts import redirect
 from django.urls import path, include
 
 def home_redirect(request):
-    return redirect('cat_sat:index')  # Chuyển hướng về /cat_sat/
+    return redirect('cat_laser_roi:index')  # Chuyển hướng về /cat_sat/
 
 urlpatterns = [
     path('admin/', admin.site.urls),
