@@ -146,7 +146,6 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
     solver.log_search_progress = False
     status = cp_model.UNKNOWN
     
-    # --- Khởi tạo và chạy Timer duy nhất ---
     total_time_for_all_steps = time_limit_seconds * 3
     timer = SolverTimer(total_time_for_all_steps)
     timer.start()
@@ -161,7 +160,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
             model.Add(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))) == min_waste_found)
         else:
             print("...Không tìm thấy lời giải cho Ưu tiên 1, dừng lại.<br>")
-            return # Dừng nếu bước đầu tiên thất bại
+            return
         
         print("<br>--- ƯU TIÊN 2: Tối thiểu hóa Tồn kho ---<br>")
         model.Minimize(sum(surplus_vars.values()))
@@ -178,22 +177,21 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
             print("<br>--- ƯU TIÊN 3: Tối ưu theo Độ ưu tiên ---<br>")
             model.Minimize(sum(x[j] * patterns_df.iloc[j]['Priority_Score'] for j in range(len(patterns_df))))
             status = solver.Solve(model)
-
     finally:
-        # Dừng timer sau khi tất cả các bước giải đã xong
         timer.stop()
         timer.join()
 
-    # ... (Phần in kết quả không đổi) ...
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         print("!CLEAR!")
         now = datetime.now()
         print(f"<b>Thời gian: {now.strftime('%d/%m/%Y %H:%M:%S')}</b><br>")
         print(f"<b>Chiều dài cây sắt thô:</b> {raw_stock_length}mm<br>")
+        
         plan_indices = [j for j in range(len(patterns_df)) if solver.Value(x[j]) > 0]
         plan_counts = [solver.Value(x[j]) for j in plan_indices]
         production_plan = patterns_df.iloc[plan_indices].copy()
         production_plan['SL cây sắt'] = plan_counts
+
         print("<h4>TỔNG KẾT</h4>")
         summary = []
         length_to_name_map = dict(zip(piece_lengths, piece_names))
@@ -203,27 +201,50 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         summary_df = pd.DataFrame(summary)
         summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
         print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
+        
         total_bars_used = production_plan['SL cây sắt'].sum()
         final_waste = (production_plan['Hao hụt (mm)'] * production_plan['SL cây sắt']).sum()
+        
         print("<hr>")
         print(f"<b>Tổng số cây sắt cần dùng:</b> {total_bars_used} cây<br>")
         print(f"<b>Tổng hao hụt dài:</b> {final_waste/1000:,.2f}m<br>")
         if total_bars_used > 0:
             print(f"<b>Hao hụt:</b> {final_waste/(raw_stock_length*total_bars_used)*100:.2f}%")
+        
         if use_priority_constraint:
             production_plan = production_plan.sort_values(by=['Priority_Score', 'SL cây sắt'], ascending=[True, True])
             print_plan = production_plan.drop(columns=['Priority_Score'])
         else:
             production_plan = production_plan.sort_values(by='SL cây sắt', ascending=True)
             print_plan = production_plan
+        
         print_plan.insert(0, 'STT', np.arange(1, len(print_plan) + 1))
         cols = [col for col in print_plan.columns if col != 'SL cây sắt'] + ['SL cây sắt']
         print_plan = print_plan[cols]
+        
         print(f"<h4>KẾ HOẠCH CẮT CHI TIẾT ({len(print_plan)} loại)</h4>")
+        
         bold_cols = [col for col in print_plan.columns if 'mm' in col and 'Hao hụt' not in col] + ['SL cây sắt']
+        
         plan_styler = print_plan.style.set_properties(**{'text-align': 'center'})
         plan_styler.set_properties(**{'font-weight': 'bold'}, subset=bold_cols)
         plan_styler.hide(axis="index")
+
+        # Thêm viền đậm bao quanh
+        piece_size_cols = [col for col in print_plan.columns if 'mm' in col and 'Hao hụt' not in col]
+        if piece_size_cols:
+            first_col_idx = print_plan.columns.get_loc(piece_size_cols[0])
+            last_col_idx = print_plan.columns.get_loc(piece_size_cols[-1])
+            border_style = '2px solid black'
+            
+            table_styles = [
+                {'selector': f'th.col{first_col_idx}, td.col{first_col_idx}', 'props': [('border-left', border_style)]},
+                {'selector': f'th.col{last_col_idx}, td.col{last_col_idx}', 'props': [('border-right', border_style)]},
+                {'selector': ', '.join([f'th.col{print_plan.columns.get_loc(c)}' for c in piece_size_cols]), 'props': [('border-top', border_style)]},
+                {'selector': ', '.join([f'tbody tr:last-child td.col{print_plan.columns.get_loc(c)}' for c in piece_size_cols]), 'props': [('border-bottom', border_style)]}
+            ]
+            plan_styler.set_table_styles(table_styles)
+        
         print(plan_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
     else:
         print("<br>❌ Rất tiếc, không thể tìm ra kế hoạch sản xuất phù hợp.")
