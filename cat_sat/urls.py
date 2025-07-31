@@ -1,10 +1,10 @@
-from django.contrib import admin
 from django.urls import path
-from . import views  
+from . import views
+
+app_name = 'cat_sat'  # This defines a namespace for the app's URLs
 
 urlpatterns = [
+    # This pattern is for your index view and is named 'index'
     path('', views.index, name='index'),
     path('optimize/', views.optimize, name='optimize'),
-    path('stop-server/', views.stop_server, name='stop_server'),
-
 ]

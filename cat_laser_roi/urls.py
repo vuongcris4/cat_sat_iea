@@ -1,4 +1,4 @@
-# cat_laser/urls.py
+# cat_laser_roi/urls.py
 from django.urls import path
 from . import views
 
@@ -6,5 +6,5 @@ app_name = 'cat_laser_roi'
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('optimize', views.optimize, name='optimize_laser_roi'), # Root of the app shows the form
+    path('run_optimization/', views.run_optimization, name='run_optimization'),
 ]

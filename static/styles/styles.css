@@ -1,53 +1,127 @@
-/* header.container-fluid {
-  padding: 2px 5px;
-} */
+/* --- GLOBAL STYLES --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #212529;
+    line-height: 1.6;
+}
 
-/* Mặc định navbar */
+/* --- HEADER & NAVIGATION --- */
+header.container-fluid {
+    border-bottom: 1px solid #dee2e6;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
 .nav a {
-  font-weight: bold;
-  color: blue;
-  padding: 5px 15px;
+    font-weight: 500;
+    color: #007bff;
+    padding: 8px 16px;
+    transition: background-color 0.2s ease-in-out;
 }
 
-/* Khi đang click (trang hiện tại) */
 .nav a.active {
-  background-color: rgb(49, 172, 249);
-  color: white !important;
-  border-radius: 5px;
+    background-color: #007bff;
+    color: white !important;
+    border-radius: 5px;
 }
 
+/* --- MAIN CONTENT & LAYOUT --- */
+main.container {
+    max-width: 1600px;
+}
+
+h2, h4 {
+    color: #495057;
+}
+h4 {
+        margin-top: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+
+/* --- FORM STYLES --- */
+form label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+form input[type="number"], form input[type="text"] {
+    width: 100%;
+        padding: 0.25rem 0.75rem; /* Giảm padding dọc tối đa */
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+form input[type="number"]:focus, form input[type="text"]:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-check-label {
+    margin-left: 0.5rem;
+}
+
+
+/* --- BUTTONS --- */
+.btn-primary {
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+
+/* --- LOGS PANEL & TABLES --- */
 #logs {
-  white-space: pre-wrap; /* Preserve \n as line breaks */
-  overflow-y: auto; /* Add scrolling for long logs */
-  max-height: 850px; /* Optional: Limit container height */
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    font-family: "SF Mono", "Courier New", monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    line-height: 1.25; /* Giảm khoảng cách dòng triệt để hơn */
+    overflow-y: auto;
+        max-height: 65vh;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.button-container {
-  position: relative;
-  /* width: 200px; */
-  /* height: 50px; */
-}
-.button-start-stop {
-  position: absolute;
-  /* width: 100%; */
-  /* height: 100%; */
-  /* font-size: 16px; */
-  /* font-weight: bold; */
-  /* border: none; */
-  /* cursor: pointer; */
-  /* border-radius: 10px; */
+#logs table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
 }
 
-.btn-optimize {
-  /* background-color: #3498db; */
-  /* color: white; */
-  z-index: 2; /* Nằm trên cùng */
+#logs th, #logs td {
+    border: 1px solid #dee2e6 !important; /* Thêm !important để đảm bảo viền luôn hiện */
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    vertical-align: middle;
 }
-.btn-stop {
-  /* background-color: #e74c3c; */
-  display: none;
-  /* color: white; */
-  top: 0;
-  left: 0;
-  z-index: 1; /* Nằm dưới */
+
+#logs th {
+    background-color: #f8f9fa;
+    font-weight: 500;
+}
+
+#logs .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* --- CUSTOM LOG ELEMENTS --- */
+#logs h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: #007bff;
+    border: none;
+}
+
+#logs hr {
+    border-top: 1px solid #dee2e6;
+        margin: 1rem 0;
 }

@@ -1,57 +1,84 @@
-# cat_laser/views.py
 from django.shortcuts import render
 from django.http import JsonResponse
-# from django.views.decorators.csrf import csrf_exempt # Use carefully or handle CSRF properly
 import json
-import time
-import sys 
+import sys
+import asyncio
+from channels.layers import get_channel_layer
+# Import LOG_HISTORY từ consumer
+from iea_project.consumers import LOG_HISTORY
 
-from .forms import OptimizationLaserForm
-from .optimization_logic import *
-from .utils import do_day_luoi_cua
-from .optimization_logic import generate_patterns, solve_patterns
+from .forms import OptimizationForm
+from .optimization_logic import get_or_calculate_patterns, solve_phase2
 
-# Use the same fixed group name as the consumer
-SHARED_GROUP_NAME = "log_gurobi_solver_cat_laser_roi"
-tee_stream = TeeStream(SHARED_GROUP_NAME)
+# Lớp TeeStream giờ sẽ ghi vào lịch sử
+class TeeStream:
+    def __init__(self, websocket_room):
+        self.websocket_room = websocket_room
+        # Xóa lịch sử cũ khi bắt đầu
+        LOG_HISTORY[self.websocket_room] = []
+
+    async def send_message_to_websocket(self, message):
+        # Lưu vào lịch sử
+        LOG_HISTORY[self.websocket_room].append(message)
+        # Gửi tới group
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(
+            self.websocket_room,
+            {"type": "chat.message", "message": message},
+        )
+
+    def write(self, message):
+        if message.strip():
+            asyncio.run(self.send_message_to_websocket(message))
+
+    def flush(self):
+        pass
 
 def index(request):
-    form = OptimizationLaserForm()
+    form = OptimizationForm()
     context = {'form': form}
     return render(request, 'cat_laser_roi/index.html', context)
 
-# @csrf_exempt # Simplifies testing; implement proper CSRF for production fetch POSTs
-def optimize(request):
+def run_optimization(request):
     if request.method == 'POST':
+        original_stdout = sys.stdout
+        room_name = "log_gurobi_solver_cat_laser_roi"
         try:
-            sys.stdout = tee_stream
-            sys.stderr = tee_stream
-            # Assume JSON data from fetch
+            sys.stdout = TeeStream(room_name)
+            
             data = json.loads(request.body)
+            stock_length = data.get('stock_length')
+            max_surplus = data.get('max_surplus')
+            use_priority_constraint = data.get('use_priority_constraint')
+            time_limit_minutes = data.get('time_limit_minutes')
+            pieces_data = data.get('pieces_data')
 
-            LENGTH = int(data['length'])
-            KICH_THUOC_DOAN = list(map(float, data['segment_sizes']))
-            SL_CAT = list(map(int, data['demands']))
-            k_factors = do_day_luoi_cua(KICH_THUOC_DOAN, data['blade_width_mctd'])
-            SO_LUONG_TON_KHO = int(data['max_stock_over'])     
+            piece_lengths = [int(item[0]) for item in pieces_data if item and item[0] is not None]
+            demands_list = [int(item[1]) for item in pieces_data if item and item[1] is not None]
+            priorities_list = [int(item[2]) for item in pieces_data if item and item[2] is not None]
 
-            # KICH_THUOC_DOAN = [2360.8, 1684.8, 1289.2, 1162.2, 565, 46]
-            # k_factors = [1, 1, 1, 1, 3, 3]
-            # LENGTH = 5850
-            # SL_CAT = [600, 1200, 1200, 600, 1200, 1200]
-            # SO_LUONG_TON_KHO = 20
+            patterns_data = get_or_calculate_patterns(
+                stock_length, piece_lengths, 1, 0.015, 3, 7
+            )
+            
+            if patterns_data is not None and not patterns_data.empty:
+                solve_phase2(
+                    stock_length,
+                    patterns_data,
+                    piece_lengths,
+                    demands_list,
+                    priorities_list,
+                    max_surplus,
+                    use_priority_constraint=use_priority_constraint,
+                    time_limit_seconds=time_limit_minutes * 60
+                )
+            
+            return JsonResponse({'status': 'success', 'message': 'Optimization process finished.'})
 
-            print("Đang tìm các patterns cho 1 cây sắt...<br>")
-            solutions = generate_patterns(KICH_THUOC_DOAN, k_factors, LENGTH)
-            # print("!!!!", type(solutions).__name__, "<br>")
-
-            print("Đang giải phương trình.....<br>")
-            print("Vui lòng đợi tối đa 1 phút.....<br>")
-            solve_patterns(solutions, LENGTH, KICH_THUOC_DOAN, SL_CAT, SO_LUONG_TON_KHO)
-
-
-            return JsonResponse({
-                "status": "success",
-            }, status=200)
         except Exception as e:
-            print(e)
+            error_message = f"Đã xảy ra lỗi trong view: {e}"
+            print(error_message) # Sẽ được gửi qua WebSocket
+            return JsonResponse({'status': 'error', 'message': error_message}, status=500)
+        finally:
+            sys.stdout = original_stdout # Luôn trả lại stdout gốc
+    return JsonResponse({'error': 'Invalid request method'}, status=400)

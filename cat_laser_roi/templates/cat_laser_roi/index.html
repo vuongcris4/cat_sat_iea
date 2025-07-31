@@ -2,175 +2,165 @@
 
 {% block content %}
 <div class="row">
-    <!-- Logs bên trái -->
     <div class="col-md-6">
         <h2 class="text-primary" style="margin-top: 0;">Máy cắt laser (cắt rời)</h2>
         <form id="optimizationForm" method="post" novalidate>
             {% csrf_token %}
-            {{ form.as_p }}
-            <div class="button-container">
-                <button id="start-process" type="submit" class="btn btn-primary button-start-stop btn-optimize">Tìm
-                    phương án cắt sắt</button>
-                <!-- <br>
-                <button id="stop-process" type="button" class="btn btn-danger button-start-stop btn-stop"
-                    onclick="stopServer()" style="display: none;">Dừng tìm phương án</button> -->
+            <div class="mb-3">{{ form.stock_length.label_tag }} {{ form.stock_length }}</div>
+            <div class="mb-3">{{ form.max_surplus.label_tag }} {{ form.max_surplus }}</div>
+            <div class="mb-3">{{ form.time_limit_minutes.label_tag }} {{ form.time_limit_minutes }}</div>
+            <div class="form-check mb-3">{{ form.use_priority_constraint }} {{ form.use_priority_constraint.label_tag }}</div>
+            <h4 class="mt-4">Chi tiết các đoạn cắt:</h4>
+            <div id="handsontable-container" class="border rounded"></div>
+            <div class="button-container mt-3">
+                <button id="start-process" type="submit" class="btn btn-primary">Tìm phương án cắt sắt</button>
             </div>
         </form>
-
     </div>
 
-    <!-- Logs bên phải -->
     <div class="col-md-6 d-flex flex-column">
         <div class="d-flex justify-content-between align-items-center">
             <h2 class="text-secondary">Kết quả</h2>
             <button id="print-log" class="btn btn-light border" onclick="printDiv()">In kết quả</button>
         </div>
-        <div id="logs" class="border rounded p-3 bg-light"></div>
+        <div id="logs" class="border rounded p-3 bg-light" style="flex-grow: 1; overflow-y: auto; white-space: pre-wrap; font-family: monospace;"></div>
     </div>
 </div>
 
-
 <script>
-    console.log("cat satttt")
     const form = document.getElementById('optimizationForm');
     const logOutput = document.getElementById('logs');
     const startButton = document.getElementById("start-process");
+    const container = document.getElementById('handsontable-container');
 
-
-    // Tạo kết nối WebSocket
-    const appName = "{{ request.resolver_match.namespace }}";  // Lấy tên app từ Django
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const socket = new WebSocket(
-        wsProtocol + window.location.host + `/ws/${appName}/log/`
-    );
-
-    socket.onopen = function () {
-        console.log("WebSocket connection established.");
-    };
-
-    // Nhận log từ WebSocket và hiển thị
-    socket.onmessage = function (event) {
-        const data = JSON.parse(event.data);
-        message = data["message"];
-        if (message == "!CLEAR!") {
-            logOutput.innerHTML = "";// Append log
+    // --- LƯU & KHÔI PHỤC TRẠNG THÁI FORM ---
+    form.addEventListener('input', (event) => {
+        if (event.target.name) {
+             if (event.target.type === 'checkbox') {
+                localStorage.setItem(event.target.name, event.target.checked);
+            } else {
+                localStorage.setItem(event.target.name, event.target.value);
+            }
         }
-        else { logOutput.innerHTML += message; }
-        logOutput.scrollTop = logOutput.scrollHeight;
-    };
-
-    socket.onclose = function () {
-        console.log("WebSocket connection closed.");
-    };
-
-    socket.onerror = function (error) {
-        console.error("WebSocket error: ", error);
-    };
-
-    // Lưu dữ liệu form vào localStorage mỗi khi có thay đổi
-    form.addEventListener('input', function () {
-        const formData = new FormData(form);
-
-        formData.forEach((value, key) => {
-            localStorage.setItem(key, value);
-        });
     });
 
-    // Khi trang được tải lại, khôi phục dữ liệu từ localStorage
     window.addEventListener('DOMContentLoaded', () => {
-        const formData = new FormData(form);
-
-        formData.forEach((value, key) => {
-            const savedValue = localStorage.getItem(key);
-            if (savedValue !== null) {
-                const field = form.querySelector(`[name="${key}"]`);
-                if (field) {
-                    field.value = savedValue;
+        Array.from(form.elements).forEach((element) => {
+            if (element.name && localStorage.getItem(element.name)) {
+                const savedValue = localStorage.getItem(element.name);
+                if (element.type === 'checkbox') {
+                    element.checked = (savedValue === 'true');
+                } else {
+                    element.value = savedValue;
                 }
             }
         });
     });
 
-    form.addEventListener("keydown", function (event) {  // Xử lí trường hợp Kki nhấn nút Enter
-        if (event.key === "Enter") {
-            event.preventDefault(); // Ngăn không cho form tự động submit
+    // --- TÍCH HỢP HANDSONTABLE ---
+    let tableData = JSON.parse(localStorage.getItem('handsontable_data'));
+    if (!tableData) {
+        tableData = [
+            [470, 3200, 1], [460, 1600, 2], [445, 3200, 4], [430, 3200, 2],
+            [425, 1600, 1], [190, 3200, 1], [25, 3200, 0]
+        ];
+    }
 
-            startButton.click();
+    const hot = new Handsontable(container, {
+        data: tableData,
+        colHeaders: ['Kích thước (mm)', 'SL Cần', 'Priority'],
+        columns: [{ type: 'numeric' }, { type: 'numeric' }, { type: 'numeric' }],
+                rowHeaders: true, width: '100%', height: 240, /* Giảm chiều cao */ licenseKey: 'non-commercial-and-evaluation',
+        minSpareRows: 1, contextMenu: true, stretchH: 'all',
+        afterChange: (changes, source) => {
+            if (source !== 'loadData') {
+                localStorage.setItem('handsontable_data', JSON.stringify(hot.getData()));
+            }
         }
     });
 
-    let formDataGlobal = {}; // Biến toàn cục để lưu dữ liệu form
+    // --- WEBSOCKET & SUBMIT LOGIC ---
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const socket = new WebSocket(wsProtocol + window.location.host + '/ws/cat_laser_roi/log/');
+    socket.onopen = () => { logOutput.innerHTML = ""; console.log("WebSocket connected."); }
+    socket.onclose = () => console.log("WebSocket disconnected.");
+    socket.onerror = (error) => console.error("WebSocket error: ", error);
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const message = data.message;
+        if (message === "!CLEAR!") {
+            logOutput.innerHTML = "";
+        } else {
+            logOutput.insertAdjacentHTML('beforeend', message); // Bỏ \\n ở đây
+        }
+
+    };
 
     form.addEventListener('submit', function (e) {
-        console.log("nhấn nút Tối ưu hóa")
-
-        startButton.disabled = true; // Disable button during processing
-        startButton.innerHTML = "Đang xử lý..."; // Change button text 
-
         e.preventDefault();
-
-        logOutput.innerHTML = ""
-
-        formDataGlobal = {
-            length: parseInt(form.laser_length.value), // From ChoiceField
-            segment_sizes: form.laser_segment_sizes.value.split(/[\s,]+/).filter(Boolean).map(Number), // String, server will parse
-            demands: form.laser_demands.value.split(/[\s,\.]+/).filter(Boolean).map(Number), // String, server will parse
-            blade_width_mctd: parseFloat(form.laser_blade_width_mctd.value), // The selected *value* (e.g., "3.0")
-            max_stock_over: parseInt(form.laser_max_stock_over.value) // From IntegerField
+        startButton.disabled = true;
+        startButton.textContent = "Đang xử lý...";
+        const tableData = hot.getData().filter(row => row.some(cell => cell !== null && cell !== '' && cell !== undefined));
+        const payload = {
+            stock_length: parseInt(document.getElementById('id_stock_length').value),
+            max_surplus: parseInt(document.getElementById('id_max_surplus').value),
+            use_priority_constraint: document.getElementById('id_use_priority_constraint').checked,
+            time_limit_minutes: parseInt(document.getElementById('id_time_limit_minutes').value),
+            pieces_data: tableData
         };
-
-        fetch("{% url 'cat_laser:optimize_laser' %}", {
+        fetch("{% url 'cat_laser_roi:run_optimization' %}", {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify(formDataGlobal),
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify(payload),
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                if (data.status == "success") {
-                    startButton.disabled = false; // Disable button during processing
-                    startButton.innerHTML = "Tìm phương án cắt sắt"; // Change button text 
-                }
-
-
-            })
-            .catch(error => {
-                console.log(error)
-                startButton.disabled = false; // Disable button during processing
-                startButton.innerHTML = "Tìm phương án cắt sắt";
-            });
+        .catch(error => {
+            console.error(error);
+            logOutput.innerHTML += "Đã xảy ra lỗi khi gửi yêu cầu: " + error;
+        })
+        .finally(() => {
+            startButton.disabled = false;
+            startButton.textContent = "Tìm phương án cắt sắt";
+        });
     });
 
-
     function printDiv() {
-        let divContents = document.getElementById("logs").innerText; // Lấy nội dung dạng text để giữ nguyên khoảng trắng
-        let screenWidth = window.screen.width;   // Lấy chiều rộng màn hình
-        let screenHeight = window.screen.height; // Lấy chiều cao màn hình
-
-        let printWindow = window.open('', '', `width=${screenWidth}, height=${screenHeight}, top=0, left=0`);
-        printWindow.document.open();
-        printWindow.document.write(`
-    <html>
-    <head>
-        <title>In cắt sắt</title>
-        <style>
-            body { font-family: Arial, sans-serif; }
-            h2 { color: #333; margin-bottom: 10px; }
-            pre { white-space: pre-wrap; font-size: 16px; word-wrap: break-word; line-height: 1.8; }
-        </style>
-    </head>
-    <body>
-        <h2>MC Laser || Sắt ${formDataGlobal.length}mm || Lưỡi MCTD ${formDataGlobal.blade_width_mctd}mm</h2>
-        <pre>${divContents}</pre>
-    </body>
-    </html>
-`);
+        let divContents = document.getElementById("logs").innerHTML;
+        const printableContents = divContents.replace(/\\n/g, '<br>');
+        const printWindow = window.open('', '', 'height=800,width=1200');
+        printWindow.document.write('<html><head><title>In Kết Quả</title>');
+        printWindow.document.write(`<style>
+            body {
+                font-family: Arial, sans-serif;
+                padding: 1rem;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1.5rem 0;
+                font-size: 0.9rem;
+            }
+            th, td {
+                border: 1px solid #ccc;
+                padding: 8px;
+                text-align: center;
+                vertical-align: middle;
+            }
+            th {
+                background-color: #f2f2f2;
+                font-weight: bold;
+            }
+            th.row_heading, th.index_name {
+                 text-align: left !important;
+            }
+            hr, h4, b {
+                page-break-after: avoid; /* Tránh ngắt trang sau các thẻ này */
+            }
+        </style>`);
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(printableContents);
+        printWindow.document.write('</body></html>');
         printWindow.document.close();
-        printWindow.print();
+        setTimeout(() => { printWindow.print(); }, 250);
     }
-
 </script>
 {% endblock %}

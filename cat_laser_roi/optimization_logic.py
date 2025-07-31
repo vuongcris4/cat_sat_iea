@@ -1,312 +1,227 @@
 from ortools.sat.python import cp_model
 import numpy as np
+import pandas as pd
 import os
-import pickle # Để lưu/tải đối tượng Python
-import hashlib # Để tạo khóa cache
-from channels.layers import get_channel_layer
-import asyncio
-import os
-import signal
+import pickle
+import hashlib
+from datetime import datetime
 
-# ================================= LỚP TẠO PATTERN =================================
-class TeeStream:
-    # Redirect stdout to WebSocket
-    def __init__(self, websocket_room):
-        self.websocket_room = websocket_room
-
-    async def send_message_to_websocket(self, message):
-        channel_layer = get_channel_layer()  # Lấy channel layer
-        await channel_layer.group_send(
-            f"{self.websocket_room}",  # Group WebSocket (phải trùng với group trong consumer)
-            {
-                "type": "chat.message",  # Tên handler trong consumer
-                "message": message,      # Dữ liệu gửi tới trình duyệt
-            },
-        )
-
-    def write(self, message):
-        # Ghi vào bộ nhớ đệm và gửi tới WebSocket
-        if message.strip(): # Ignore empty lines
-            asyncio.run(self.send_message_to_websocket(message))
-
-    def flush(self):
-        pass
-    #     self.original_stream.flush()    # Ensure all data in the buffer is written to the original stream
-
-
-"""
-a là mảng kích thước đoạn
-k là mảng độ dày lưỡi mài
-"""
-# KICH_THUOC_DOAN, do_day_luoi_mai, LENGTH
-def generate_patterns(a, k, length):
-    cache_key = generate_cache_key(a, k, length)
-    solutions = load_from_cache(cache_key)
-    if not solutions is None:
-        print(f"Đã load từ cache {len(solutions)} nghiệm<br>")
-        return solutions
-    
-    # Kiểm tra độ dài mảng a và k
-    a = np.array(a)
-    k = np.array(k)
-    n = len(a)
-    if len(k) != n:
-        raise ValueError("Mảng k phải có cùng kích thước với mảng a")
-
-    # Tạo mô hình
+# ===================================================================
+# GIAI ĐOẠN 1 (Không đổi)
+# ===================================================================
+def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay=6):
+    print("⏳ Bắt đầu Giai đoạn 1: Tìm các phương án cắt hiệu quả...<br>")
     model = cp_model.CpModel()
-
-    # 1. Xác định các vị trí đặc biệt (k_i != 1)
-    special_indices = [i for i in range(n) if k[i] != 1]
-
-    # 2. Khai báo biến x_i
-    x = []
-    for i in range(n):
-        # if k[i] == 1:
-        #     x.append(model.NewIntVar(1, length, f'x_{i+1}'))  # x_i >= 1, giới hạn trên là length
-        # else:
-        x.append(model.NewIntVar(0, length, f'x_{i+1}')) # x_i >= 0, giới hạn trên là length
-
-    # 3. Biến nhị phân b_i cho các vị trí đặc biệt
-    b = [model.NewBoolVar(f'b_{i+1}') for i in special_indices]
-
-    # 4. Ràng buộc giữa x_i và b_i
-    M = length # Hằng số lớn được thay bằng length
-    for idx, i in enumerate(special_indices):
-        model.Add(x[i] <= M * b[idx]) # Nếu x_i > 0 thì b_i = 1
-        model.Add(x[i] >= b[idx]) # Nếu b_i = 1 thì x_i >= 1
-
-    # 5. Tính s: số biến khác 0 tại các vị trí đặc biệt
-    s = model.NewIntVar(0, len(special_indices), 's')
-    model.Add(s == sum(b))
-
-    #       S LÀ SỐ LƯỢNG ĐOẠN CÓ LƯỠI MÀI KHÁC 1
-    # 6. Phân loại trường hợp với biến nhị phân
-    b0 = model.NewBoolVar('b0') # s = 0
-    b1 = model.NewBoolVar('b1') # s = 1
-    b2 = model.NewBoolVar('b2') # s >= 2
-
-    # Ràng buộc cho b0, b1, b2
-    model.Add(s == 0).OnlyEnforceIf(b0)
-    model.Add(s != 0).OnlyEnforceIf(b0.Not())
-    model.Add(s == 1).OnlyEnforceIf(b1)
-    model.Add(s != 1).OnlyEnforceIf(b1.Not())
-    model.Add(s >= 2).OnlyEnforceIf(b2)
-    model.Add(s < 2).OnlyEnforceIf(b2.Not())
-
-    # Chỉ một trường hợp xảy ra
-    model.Add(b0 + b1 + b2 == 1)
-
-    # 7. Tổng biểu thức: sum((a[i] + k[i]) * x[i])
-    # Nhân tất cả các hệ số với 100 để biến thành số nguyên
-    expr = sum(int(100 * (a[i] + k[i])) * x[i] for i in range(n))
-
-    # 8. Ràng buộc bất đẳng thức dựa trên c
-    # Nhân các giá trị bên phải với 100
-    model.Add(expr <= int(100 * (length - 60))).OnlyEnforceIf(b0) 
-    model.Add(expr <= int(100 * (length - 0))).OnlyEnforceIf(b1) 
-    model.Add(expr <= int(100 * (length - 15))).OnlyEnforceIf(b2) # expr + 15 <= length => expr <= length - 15
-    model.Add(int(100 * length * (1-0.015)) <= expr ) # Hao hụt 1.5% từng cây
-
-    # 9. Lớp callback để thu thập nghiệm
-    class SolutionPrinter(cp_model.CpSolverSolutionCallback):
-        def __init__(self, variables, special_indices, b0, b1, b2):
+    num_pieces = len(piece_lengths)
+    counts = [model.NewIntVar(0, 30, f'x_{i}') for i in range(num_pieces)]
+    total_pieces_length = sum(counts[i] * length for i, length in enumerate(piece_lengths))
+    total_kerf_loss = sum(counts) * kerf_width
+    total_material_used = total_pieces_length + total_kerf_loss + trim_start
+    model.Add(total_material_used <= stock_length)
+    min_material_used = int(stock_length * (1 - max_waste_percentage))
+    model.Add(min_material_used <= total_material_used)
+    waste_var = model.NewIntVar(0, stock_length, 'waste')
+    model.Add(waste_var == stock_length - total_material_used)
+    is_waste_zero = model.NewBoolVar('is_waste_zero')
+    model.Add(waste_var == 0).OnlyEnforceIf(is_waste_zero)
+    model.Add(waste_var >= doan_thua_cat_tay).OnlyEnforceIf(is_waste_zero.Not())
+    solver = cp_model.CpSolver()
+    solver.log_search_progress = True
+    class SolutionAndLogCollector(cp_model.CpSolverSolutionCallback):
+        def __init__(self, variables):
             cp_model.CpSolverSolutionCallback.__init__(self)
-            self.variables_ = variables
-            self.special_indices_ = special_indices
-            self.b0_ = b0
-            self.b1_ = b1
-            self.b2_ = b2
-            self.solution_dict_ = {}  # Use a dictionary instead of a set
-
-        def OnSolutionCallback(self):
-            solution = tuple(self.Value(v) for v in self.variables_)
-            special_values = [self.Value(self.variables_[i]) for i in self.special_indices_]
-            num_nonzero = sum(1 for val in special_values if val > 0)
-            if num_nonzero == 0:
-                c = 60
-            elif num_nonzero == 1:
-                c = 0
-            else:
-                c = 15
-            tong_chieu_dai_cat_duoc = sum((a + k) * solution)
-            if 0 < tong_chieu_dai_cat_duoc + c <= length:
-                if self.Value(self.b0_):
-                    case = "c=60"
-                elif self.Value(self.b1_):
-                    case = "c=0"
-                else:
-                    case = "c=15"
-                # Only store if this solution is new or has a larger tong_chieu_dai_cat_duoc
-                if solution not in self.solution_dict_ or self.solution_dict_[solution][0] < tong_chieu_dai_cat_duoc:
-                    self.solution_dict_[solution] = (tong_chieu_dai_cat_duoc, case)
-
-        def get_sorted_solutions(self):
-            solutions = [(tong_chieu_dai, list(solution), case) 
-                        for solution, (tong_chieu_dai, case) in self.solution_dict_.items()]
-            
-            return sorted(solutions, reverse=True, key=lambda s: s[0])
-    
-    # 10. Tìm tất cả nghiệm
-    solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True # hiển thị log chi tiết
-
-    solution_printer = SolutionPrinter(x, special_indices, b0, b1, b2)  # Truyền b0, b1, b2
-    solver.SearchForAllSolutions(model, solution_printer)
-
-    # 11. In kết quả
-    # print(f"Tổng số nghiệm: {len(solution_printer.solutions_)}")
-    # for i, sol in enumerate(solution_printer.solutions_, 1):
-    #     print(f"Nghiệm {i}: {sol}")
-
-    solutions = solution_printer.get_sorted_solutions()
-    save_to_cache(cache_key, solutions)
-    print(f"Đã lưu vào cache {len(solutions)} nghiệm<br>")
-
-    return solutions
-
-
-# solutions: ma trận giải ra được từ generate_patterns
-def solve_patterns(solutions, LENGTH, KICH_THUOC_DOAN, SL_CAT, SO_LUONG_TON_KHO=10):
-    # Chuyển danh sách solutions thành ma trận
-    patterns = _extract_solution_matrix(solutions)
-    hao_hut = np.array([LENGTH - solution[0] for solution in solutions])
-
-    # Khởi tạo mô hình tối ưu
-    model = cp_model.CpModel()
-
-    m, n = patterns.shape # Số pattern (hàng) và số đoạn (cột)
-
-    # Tạo biến x[i] là số lần sử dụng mỗi pattern
-    x_cay_sat = [model.NewIntVar(0, max(SL_CAT), f'x_{i}') for i in range(n)]
-
-    # Ràng buộc: 0 <= (patterns * x - SL_CAT) <= SO_LUONG_TON_KHO (đảm bảo đủ số đoạn cần thiết)
-    for i in range(m):
-        model.Add((sum(patterns[i, j] * x_cay_sat[j] for j in range(n)) - SL_CAT[i]) >= 0)
-        model.Add((sum(patterns[i, j] * x_cay_sat[j] for j in range(n)) - SL_CAT[i]) <= SO_LUONG_TON_KHO)
-
-    # Hàm mục tiêu: Minimize tổng hao hụt
-
-    tong_so_patterns = model.NewIntVar(0, n, "tong_so_patterns")
-    bool_vars = [model.NewBoolVar(f'b_{i}') for i in range(n)]
-    for i in range(n):
-        model.Add(x_cay_sat[i] > 0).OnlyEnforceIf(bool_vars[i])
-        model.Add(x_cay_sat[i] == 0).OnlyEnforceIf(bool_vars[i].Not())
-    model.Add(tong_so_patterns == sum(bool_vars))
-
-    tong_hao_hut = sum(hao_hut[i] * x_cay_sat[i] for i in range(n))
-    # model.Minimize(tong_so_patterns + tong_hao_hut)
-    model.Minimize(tong_hao_hut)
-
-    # Giải bài toán
-    solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True # hiển thị log chi tiết
-    solver.parameters.max_time_in_seconds = 60 # Dừng sau 60 giây
-    status = solver.Solve(model)
-
-    # Kiểm tra kết quả tối ưu
-    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        optimal_x = [solver.Value(x_var) for x_var in x_cay_sat] # Số lượng cây sắt cho từng pattern
-
-        # Nhân ma trận patterns với vector optimal_x
-        result_matrix = np.dot(patterns, optimal_x)
-
-        # In kết quả
-
-        print("!CLEAR!")    # XÓA HẾT LOG TRƯỚC KHI PRINT KẾT QUẢ
-
-        print("Kích thước đoạn:<br>")
-        print(KICH_THUOC_DOAN,"<br>")
-        # print("<br>____<br>")
-
-        print("Số lượng cần:<br>")
-        print(SL_CAT, "<br>")
-        # print("<br>____<br>")
-
-        print("Đã cắt:<br>")
-        DA_CAT = list(map(int, result_matrix))
-        print(DA_CAT, "<br>")
-        # print("<br>____<br>")
-
-        so_lan_cat = 0
-        tong_hao_hut_sat = 0
-        print("-"*40,"<br>")
-        # print("Các bước cắt:<br>")
-        for solution, count in zip(solutions, optimal_x):
-            if count > 0:
-                so_lan_cat += 1
-                #  || {solution[2]}
-                print(f"🔹 Lần cắt thứ {so_lan_cat} || Hao hụt: {LENGTH-solution[0]:.1f}mm || Cắt {count} cây sắt<br>")
-                tong_hao_hut_sat += (LENGTH-solution[0])*count
-                # print(f"{solution}: {count}")
-                for size, so_nhat in zip(KICH_THUOC_DOAN, solution[1]):
-                    if so_nhat > 0:
-                        print(f"({size}mm: {so_nhat} nhát)", end=", ")
-                print("<br><br>")
-
-        print("-"*40,"<br>")
-        so_cay_sat = sum(optimal_x)
-        print(f"Cần {so_cay_sat} cây sắt<br>")
-        print(f"Hao hụt: {tong_hao_hut_sat / (LENGTH*so_cay_sat) * 100:.2f}%")
-
+            self.__variables = variables
+            self.solutions = []
+        def on_solution_callback(self):
+            solution = {v.Name(): self.Value(v) for v in self.__variables}
+            self.solutions.append(solution)
+        def on_log_message(self, message: str):
+            print(message)
+    solution_collector = SolutionAndLogCollector(counts)
+    solver.parameters.enumerate_all_solutions = True
+    print("Vui lòng chờ, bộ giải đang tìm kiếm các pattern... (GĐ 1)<br>")
+    status = solver.Solve(model, solution_collector)
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE) and solution_collector.solutions:
+        print(f"✅ GĐ 1: Tính toán thành công, tìm thấy {len(solution_collector.solutions)} patterns hiệu quả.<br>")
+        df_patterns = pd.DataFrame(solution_collector.solutions)
+        column_names = {f'x_{i}': f'{length}mm' for i, length in enumerate(piece_lengths)}
+        df_patterns = df_patterns.rename(columns=column_names)
+        total_sl_cols = [f'{length}mm' for length in piece_lengths]
+        df_patterns['Tong_SL_Doan'] = df_patterns[total_sl_cols].sum(axis=1)
+        df_patterns['Tong_Dai_Doan'] = 0
+        for i, length in enumerate(piece_lengths):
+            df_patterns['Tong_Dai_Doan'] += df_patterns[f'{length}mm'] * length
+        df_patterns['Tong_Cat'] = df_patterns['Tong_Dai_Doan'] + (df_patterns['Tong_SL_Doan'] * kerf_width) + trim_start
+        phoi_cuoi_cung = stock_length - df_patterns['Tong_Cat']
+        df_patterns['Hao hụt (mm)'] = phoi_cuoi_cung + trim_start
+        ordered_columns = [f'{length}mm' for length in piece_lengths] + ['Hao hụt (mm)']
+        return df_patterns[ordered_columns].sort_values(by='Hao hụt (mm)')
     else:
-        print("!CLEAR!")    # XÓA HẾT LOG TRƯỚC KHI PRINT KẾT QUẢ
-        print("❌ KHÔNG TÌM THẤY GIẢI PHÁP TỐI ƯU.<br>")
-
-
-# Trích xuất ma trận từ danh sách solutions
-def _extract_solution_matrix(solutions, num_sol=-1):
-    """Trích xuất ma trận từ danh sách solutions."""
-    solution_matrix = np.array([list(solution[1]) for solution in solutions[:num_sol]])
-    print(solution_matrix)
-    return solution_matrix.T
-
-
-
-# ============================ HÀM HỖ TRỢ CACHING ============================
-CACHE_DIR = "pattern_cache" # Thư mục lưu cache
-
-def generate_cache_key(item_sizes, item_waste_factors, stock_length):
-    """Tạo khóa cache duy nhất từ input của PatternGenerator."""
-    # Chuyển list/array thành tuple để đảm bảo hash được và đúng thứ tự
-    key_data = (
-        tuple(np.round(item_sizes, 2)), # Làm tròn để tránh lỗi do float precision
-        tuple(item_waste_factors),
-        round(stock_length, 2)
-    )
-    # Sử dụng pickle để serialize và hashlib để tạo hash ổn định
-    serialized_data = pickle.dumps(key_data)
-    hasher = hashlib.sha256()
-    hasher.update(serialized_data)
-    return hasher.hexdigest()
-
-def save_to_cache(cache_key, data):
-    """Lưu dữ liệu vào file cache."""
-    if not os.path.exists(CACHE_DIR):
-        os.makedirs(CACHE_DIR) # Tạo thư mục nếu chưa có
-    filepath = os.path.join(CACHE_DIR, f"{cache_key}.pkl")
-    try:
-        with open(filepath, 'wb') as f:
-            pickle.dump(data, f)
-        print(f"Đã lưu kết quả patterns vào cache: {filepath}<br>")
-    except IOError as e:
-        print(f"Lỗi khi lưu cache: {e}<br>")
-
-def load_from_cache(cache_key):
-    """Tải dữ liệu từ file cache."""
-    filepath = os.path.join(CACHE_DIR, f"{cache_key}.pkl")
-    if os.path.exists(filepath):
-        try:
-            with open(filepath, 'rb') as f:
-                data = pickle.load(f)
-            print(f"Đã tải kết quả patterns từ cache: {filepath}<br>")
-            return data
-        except (IOError, pickle.PickleError, EOFError) as e:
-            print(f"Lỗi khi đọc cache (sẽ tạo lại): {e}<br>")
-            # Có thể xóa file cache lỗi nếu muốn
-            # try: os.remove(filepath)
-            # except OSError: pass
-            return None
-    else:
-        # print("Không tìm thấy file cache phù hợp.")
+        print("❌ GĐ 1: Không tìm thấy pattern nào phù hợp.<br>")
         return None
+
+def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay):
+    cache_folder = "patterns_cache"
+    os.makedirs(cache_folder, exist_ok=True)
+    sorted_pieces = tuple(sorted(piece_lengths))
+    params_string = f"{stock_length}-{sorted_pieces}-{kerf_width}-{max_waste_percentage}-{trim_start}"
+    input_hash = hashlib.sha256(params_string.encode('utf-8')).hexdigest()[:16]
+    filename = os.path.join(cache_folder, f"patterns_{input_hash}.pkl")
+    if os.path.exists(filename):
+        print(f"👍 GĐ 1: Đã tìm thấy file nghiệm '{filename}'. Đang tải lại...<br>")
+        with open(filename, 'rb') as f:
+            patterns = pickle.load(f)
+        print(f"✅ GĐ 1: Tải lại thành công! Tìm thấy {len(patterns)} patterns đã lưu.<br>")
+        return patterns
+    else:
+        patterns = find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay)
+        if patterns is not None and not patterns.empty:
+            with open(filename, 'wb') as f:
+                pickle.dump(patterns, f)
+            print(f"💾 GĐ 1: Đã lưu bộ nghiệm mới vào file: '{filename}'<br>")
+        return patterns
+
+# ===================================================================
+# GIAI ĐOẠN 2
+# ===================================================================
+def solve_phase2(raw_stock_length, patterns_df, piece_lengths, demands_list, priorities_list,
+                 max_surplus, use_priority_constraint=False, time_limit_seconds=120.0):
+    print("!CLEAR!")
+    print("🚀 Bắt đầu Giai đoạn 2: Tối ưu hóa kế hoạch cắt sắt...<br>")
+    if use_priority_constraint:
+        print("--- Chế độ ưu tiên đang BẬT ---<br>")
+        long_piece_cols = [f'{length}mm' for length in piece_lengths if length >= 60]
+        original_pattern_count = len(patterns_df)
+        patterns_df = patterns_df[patterns_df[long_piece_cols].sum(axis=1) > 0].copy()
+        print(f"Lọc pattern: Giữ lại {len(patterns_df)}/{original_pattern_count} patterns hợp lệ (có đoạn >= 60mm).<br>")
+        priority_map = dict(zip(piece_lengths, priorities_list))
+        def calculate_priority_score(row):
+            min_priority = float('inf')
+            for length, priority in priority_map.items():
+                if row[f'{length}mm'] > 0 and priority < min_priority:
+                    min_priority = priority
+            return min_priority
+        patterns_df['Priority_Score'] = patterns_df.apply(calculate_priority_score, axis=1)
+    else:
+        print("--- Chế độ ưu tiên đang TẮT (chỉ tối ưu hao hụt và tồn kho) ---<br>")
+    if len(patterns_df) == 0:
+        print("❌ GĐ 2: Không có pattern nào để xử lý sau khi lọc.<br>")
+        return
+    model = cp_model.CpModel()
+    x = [model.NewIntVar(0, sum(demands_list) * 2, f'x_{j}') for j in range(len(patterns_df))]
+    surplus_vars = {}
+    for i, length in enumerate(piece_lengths):
+        produced = sum(x[j] * patterns_df.iloc[j][f'{length}mm'] for j in range(len(patterns_df)))
+        model.Add(produced >= demands_list[i])
+        s = model.NewIntVar(0, sum(demands_list), f'surplus_{length}')
+        model.Add(s == produced - demands_list[i])
+        surplus_vars[length] = s
+        model.Add(s <= max_surplus)
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = time_limit_seconds
+    solver.log_search_progress = True
+    class LogCallback(cp_model.CpSolverSolutionCallback):
+        def __init__(self):
+            cp_model.CpSolverSolutionCallback.__init__(self)
+        def on_log_message(self, message: str):
+            print(message)
+        def on_solution_callback(self):
+            pass
+    log_callback = LogCallback()
+    status = cp_model.UNKNOWN
+    print("<br>--- ƯU TIÊN 1: Tối thiểu hóa Hao hụt ---<br>")
+    print("Vui lòng chờ, bộ giải đang tìm kiếm lời giải tối ưu...<br>")
+    model.Minimize(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))))
+    status = solver.Solve(model, log_callback)
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        min_waste_found = int(solver.ObjectiveValue())
+        print(f"✅ Mức hao hụt tối thiểu: {min_waste_found:,.0f} mm<br>")
+        model.Add(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))) == min_waste_found)
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        print("<br>--- ƯU TIÊN 2: Tối thiểu hóa Tồn kho ---<br>")
+        print("Vui lòng chờ, bộ giải đang tìm kiếm lời giải tối ưu...<br>")
+        model.Minimize(sum(surplus_vars.values()))
+        status = solver.Solve(model, log_callback)
+        if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            min_surplus_found = int(solver.ObjectiveValue())
+            print(f"✅ Mức tồn kho tối thiểu: {min_surplus_found:,.0f} đoạn<br>")
+            model.Add(sum(surplus_vars.values()) == min_surplus_found)
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE) and use_priority_constraint:
+        print("<br>--- ƯU TIÊN 3: Tối ưu theo Độ ưu tiên ---<br>")
+        print("Vui lòng chờ, bộ giải đang tìm kiếm lời giải tối ưu...<br>")
+        model.Minimize(sum(x[j] * patterns_df.iloc[j]['Priority_Score'] for j in range(len(patterns_df))))
+        status = solver.Solve(model, log_callback)
+
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        print("!CLEAR!")
+        now = datetime.now()
+        print(f"<b>Thời gian: {now.strftime('%d/%m/%Y %H:%M:%S')}</b><br>")
+        print(f"<b>Chiều dài cây sắt thô:</b> {raw_stock_length}mm<br>")
+        
+        plan_indices = [j for j in range(len(patterns_df)) if solver.Value(x[j]) > 0]
+        plan_counts = [solver.Value(x[j]) for j in plan_indices]
+        production_plan = patterns_df.iloc[plan_indices].copy()
+        production_plan['SL cây sắt'] = plan_counts
+
+        # --- HIỂN THỊ TỔNG KẾT TRƯỚC ---
+        print("<h4>TỔNG KẾT</h4>")
+        summary = []
+        for i, length in enumerate(piece_lengths):
+            produced = (production_plan[f'{length}mm'] * production_plan['SL cây sắt']).sum()
+            summary.append({"Đoạn (mm)": length, "SL cần (đoạn)": demands_list[i], "SL cắt (đoạn)": produced, "Tồn kho (đoạn)": produced - demands_list[i]})
+        summary_df = pd.DataFrame(summary)
+        
+        summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
+        print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
+        
+        total_bars_used = production_plan['SL cây sắt'].sum()
+        final_waste = (production_plan['Hao hụt (mm)'] * production_plan['SL cây sắt']).sum()
+        
+        print("<hr>")
+        print(f"<b>Tổng số cây sắt cần dùng:</b> {total_bars_used} cây<br>")
+        print(f"<b>Tổng hao hụt dài:</b> {final_waste/1000:,.2f}m<br>")
+        if total_bars_used > 0:
+            print(f"<b>Hao hụt:</b> {final_waste/(raw_stock_length*total_bars_used)*100:.2f}%")
+        
+        # --- HIỂN THỊ KẾ HOẠCH CẮT SAU ---
+        if use_priority_constraint:
+            production_plan = production_plan.sort_values(by=['Priority_Score', 'SL cây sắt'], ascending=[True, True])
+            print_plan = production_plan.drop(columns=['Priority_Score'])
+        else:
+            production_plan = production_plan.sort_values(by='SL cây sắt', ascending=True)
+            print_plan = production_plan
+            
+        print_plan.insert(0, 'STT', np.arange(1, len(print_plan) + 1))
+        cols = [col for col in print_plan.columns if col != 'SL cây sắt'] + ['SL cây sắt']
+        print_plan = print_plan[cols]
+        
+        print(f"<h4>KẾ HOẠCH CẮT CHI TIẾT ({len(print_plan)} loại)</h4>")
+        
+        bold_cols = [col for col in print_plan.columns if 'mm' in col and 'Hao hụt' not in col] + ['SL cây sắt']
+        
+        plan_styler = print_plan.style.set_properties(**{'text-align': 'center'})
+        plan_styler.set_properties(**{'font-weight': 'bold'}, subset=bold_cols)
+        plan_styler.hide(axis="index")
+
+        # Thêm viền đậm bao quanh
+        piece_size_cols = [col for col in print_plan.columns if 'mm' in col and 'Hao hụt' not in col]
+        if piece_size_cols:
+            first_col_idx = print_plan.columns.get_loc(piece_size_cols[0])
+            last_col_idx = print_plan.columns.get_loc(piece_size_cols[-1])
+            border_style = '2px solid black'
+            
+            table_styles = [
+                # Viền trái cho cột đầu tiên (cả header và data)
+                {'selector': f'th.col{first_col_idx}, td.col{first_col_idx}', 'props': [('border-left', border_style)]},
+                # Viền phải cho cột cuối cùng (cả header và data)
+                {'selector': f'th.col{last_col_idx}, td.col{last_col_idx}', 'props': [('border-right', border_style)]},
+                # Viền trên cho tất cả header trong khối
+                {'selector': ', '.join([f'th.col{print_plan.columns.get_loc(c)}' for c in piece_size_cols]), 'props': [('border-top', border_style)]},
+                # Viền dưới cho tất cả các ô ở hàng cuối cùng trong khối
+                {'selector': ', '.join([f'tbody tr:last-child td.col{print_plan.columns.get_loc(c)}' for c in piece_size_cols]), 'props': [('border-bottom', border_style)]}
+            ]
+            plan_styler.set_table_styles(table_styles)
+        
+        print(plan_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
+    else:
+        print("<br>❌ Rất tiếc, không thể tìm ra kế hoạch sản xuất phù hợp.")
