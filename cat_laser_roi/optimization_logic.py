@@ -185,14 +185,14 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         print("!CLEAR!")
         now = datetime.now()
         print(f"<b>Thời gian: {now.strftime('%d/%m/%Y %H:%M:%S')}</b><br>")
-        print(f"<b>Chiều dài cây sắt thô:</b> {raw_stock_length}mm<br>")
+        print(f"<b>Chiều dài cây sắt:</b> {raw_stock_length}mm<br>")
         
         plan_indices = [j for j in range(len(patterns_df)) if solver.Value(x[j]) > 0]
         plan_counts = [solver.Value(x[j]) for j in plan_indices]
         production_plan = patterns_df.iloc[plan_indices].copy()
         production_plan['SL cây sắt'] = plan_counts
 
-        print("<h4>TỔNG KẾT</h4>")
+        print("<h4>TỔNG KẾT CẮT LASER (CẮT RỜI)</h4>")
         summary = []
         length_to_name_map = dict(zip(piece_lengths, piece_names))
         for i, length in enumerate(piece_lengths):
