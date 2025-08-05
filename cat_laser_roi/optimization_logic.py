@@ -11,20 +11,24 @@ import threading
 # ===================================================================
 # GIAI ĐOẠN 1 (Không đổi)
 # ===================================================================
-def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay=6):
+def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay=0):
     print("⏳ Bắt đầu Giai đoạn 1: Tìm các phương án cắt hiệu quả...<br>")
     model = cp_model.CpModel()
     num_pieces = len(piece_lengths)
     counts = [model.NewIntVar(0, 30, f'x_{i}') for i in range(num_pieces)]
     total_pieces_length = sum(counts[i] * length for i, length in enumerate(piece_lengths))
     total_kerf_loss = sum(counts) * kerf_width
-    total_material_used = total_pieces_length + total_kerf_loss + trim_start
+    total_material_used = total_pieces_length + total_kerf_loss + trim_start    # tổng các đoạn + tổng lưỡi mài + tề đầu
+
+    # cây sắt - cùi sắt
     model.Add(total_material_used <= stock_length)
     min_material_used = int(stock_length * (1 - max_waste_percentage))
     model.Add(min_material_used <= total_material_used)
+
     waste_var = model.NewIntVar(0, stock_length, 'waste')
     model.Add(waste_var == stock_length - total_material_used)
     is_waste_zero = model.NewBoolVar('is_waste_zero')
+
     model.Add(waste_var == 0).OnlyEnforceIf(is_waste_zero)
     model.Add(waste_var >= doan_thua_cat_tay).OnlyEnforceIf(is_waste_zero.Not())
     solver = cp_model.CpSolver()
@@ -39,6 +43,7 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
             self.solutions.append(solution)
     solution_collector = SolutionAndLogCollector(counts)
     solver.parameters.enumerate_all_solutions = True
+
     print("Vui lòng chờ, bộ giải đang tìm kiếm các pattern... (GĐ 1)<br>")
     status = solver.Solve(model, solution_collector)
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE) and solution_collector.solutions:

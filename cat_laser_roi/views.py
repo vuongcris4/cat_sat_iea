@@ -53,8 +53,10 @@ def run_optimization(request):
             demands_list = [int(item[2]) for item in pieces_data if item and item[2] is not None]
             priorities_list = [int(item[3]) for item in pieces_data if item and item[3] is not None]
 
+            # Giới hạn 10mm, hao hụt 1.5% của 1 chiều dài cây sắt
+            # chiều dài cây sắt, tổng số lượng các đoạn, tia laser, hao hụt 1.5%, bắt đầu hao hụt 10mm, đoạn thừa cắt tay 7 đoạn (khởi điểm)
             patterns_data = get_or_calculate_patterns(
-                stock_length, piece_lengths, 1, 0.015, 3, 7
+                stock_length, piece_lengths, 1, 0.015, 10, 7
             )
             
             if patterns_data is not None and not patterns_data.empty:
