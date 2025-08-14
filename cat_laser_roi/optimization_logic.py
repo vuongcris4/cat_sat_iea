@@ -275,7 +275,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         # Chỉ hiển thị các cột sản phẩm có số lượng cắt > 0
         # cols_to_show = [col for col in rename_map.values() if print_plan[col].sum() > 0]
         other_cols = ['Hao hụt (mm)', 'SL cây sắt']
-        final_cols = ['STT'] + rename_map.values() + other_cols
+        final_cols = ['STT'] + list(rename_map.values()) + other_cols
 
         print_plan.insert(0, 'STT', np.arange(1, len(print_plan) + 1))
         print_plan = print_plan[final_cols]
