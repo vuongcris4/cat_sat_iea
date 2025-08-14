@@ -196,6 +196,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
     
     try:
         print("<br>--- ƯU TIÊN 1: Tối thiểu hóa Hao hụt ---<br>")
+        print("Vui lòng chờ......")
         model.Minimize(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))))
         status = solver.Solve(model)
         if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
@@ -207,6 +208,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
             return
         
         print("<br>--- ƯU TIÊN 2: Tối thiểu hóa Tồn kho ---<br>")
+        print("Vui lòng chờ......")
         model.Minimize(sum(surplus_vars.values()))
         status = solver.Solve(model)
         if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
@@ -220,6 +222,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         # Mục tiêu 3 (tùy chọn): Tối ưu theo độ ưu tiên
         if use_priority_constraint:
             print("<br>--- ƯU TIÊN 3: Tối ưu theo Độ ưu tiên ---<br>")
+            print("Vui lòng chờ......")
             model.Minimize(sum(x[j] * patterns_df.iloc[j]['Priority_Score'] for j in range(len(patterns_df))))
             status = solver.Solve(model)
     finally:
