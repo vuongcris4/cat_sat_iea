@@ -85,7 +85,6 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
         df_patterns['Tong_Cat'] = df_patterns['Tong_Dai_Doan'] + (df_patterns['Tong_SL_Doan'] * kerf_width_int) + trim_start_int
         phoi_cuoi_cung = stock_length_int - df_patterns['Tong_Cat']
         df_patterns['Hao hụt (mm)'] = phoi_cuoi_cung + trim_start_int
-        df_patterns['Hao hụt (mm)'] = df_patterns['Hao hụt (mm)'] / SCALING_FACTOR
 
         ordered_columns = segment_cols + ['Hao hụt (mm)']
         return df_patterns[ordered_columns].sort_values(by='Hao hụt (mm)')
@@ -212,12 +211,12 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
     try:
         print("<br>--- ƯU TIÊN 1: Tối thiểu hóa Hao hụt ---<br>")
         print("Vui lòng chờ......<br>")
-        model.Minimize(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm) int'] for j in range(len(patterns_df))))
+        model.Minimize(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))))
         status = solver.Solve(model)
         if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             min_waste_found = int(solver.ObjectiveValue())
             print(f"✅ Mức hao hụt tối thiểu: {min_waste_found / SCALING_FACTOR:,.2f} mm<br>")
-            model.Add(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm) int'] for j in range(len(patterns_df))) == min_waste_found)
+            model.Add(sum(x[j] * patterns_df.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_df))) == min_waste_found)
         else:
             print("...Không tìm thấy lời giải cho Ưu tiên 1, dừng lại.<br>")
             return
@@ -253,10 +252,13 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         plan_indices = [j for j in range(len(patterns_df)) if solver.Value(x[j]) > 0]   # Chi in nhung pattern co SL cay sat > 0, tim vi tri
         plan_counts = [solver.Value(x[j]) for j in plan_indices]    #Lay mang SL cay sat
         production_plan = patterns_df.iloc[plan_indices].copy() # Lay cac pattern SL cay sat > 0
-        print(production_plan)
+
         production_plan['SL cây sắt'] = plan_counts
 
         print("<h4>TỔNG KẾT CẮT LASER (CẮT RỜI)</h4>")
+        
+        custom_formatter_int = lambda x: f"{int(x)}" if x == int(x) else f"{x:.1f}" # Dinh dang so nguyen hoac so thap phan 1 chu so
+
         summary = []
         for i, length in enumerate(piece_lengths):
             produced = (production_plan[f'segment_{i}'] * production_plan['SL cây sắt']).sum()
@@ -269,11 +271,14 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
             })
         summary_df = pd.DataFrame(summary)
         summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
+        summary_styler.format({"Đoạn (mm)": custom_formatter_int}) # Dinh dang so nguyen hoac so thap phan 1 chu so
+
         print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
         
         # --- SỬA LỖI: Chia lại hệ số khi tính toán và hiển thị hao hụt cuối cùng ---
         # Thông số tổng hợp
         total_bars_used = production_plan['SL cây sắt'].sum()
+        production_plan['Hao hụt (mm)'] = production_plan['Hao hụt (mm)'] / SCALING_FACTOR
         final_waste = (production_plan['Hao hụt (mm)'] * production_plan['SL cây sắt']).sum()
         
         print("<hr>")
@@ -290,7 +295,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
             print_plan = production_plan
         
         # Đổi tên cột từ 'segment_i' sang tên dễ đọc để hiển thị
-        rename_map = {f'segment_{i}': f'{piece_names[i]} <br>({piece_lengths[i]}mm)' for i in range(len(piece_names))}
+        rename_map = {f'segment_{i}': f'{piece_names[i]} <br>({custom_formatter_int(piece_lengths[i])}mm)' for i in range(len(piece_names))}
         print_plan.rename(columns=rename_map, inplace=True)
 
         # --- SỬA LỖI: Chia lại cột hao hụt trước khi hiển thị ---
@@ -310,6 +315,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         bold_cols = [col for col in print_plan.columns if 'mm' in col and 'Hao hụt' not in col] + ['SL cây sắt']
         
         plan_styler = print_plan.style.set_properties(**{'text-align': 'center'})
+        plan_styler.format({'Hao hụt (mm)': custom_formatter_int})
         plan_styler.set_properties(**{'font-weight': 'bold'}, subset=bold_cols)
         plan_styler.hide(axis="index")
 
