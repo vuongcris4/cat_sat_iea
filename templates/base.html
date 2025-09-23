@@ -23,10 +23,10 @@
                 <nav class="nav">
                     <a class="nav-link {% if request.path == '/cat_sat/' %}active{% endif %}"
                         href="{% url 'cat_sat:index' %}">MCTĐ</a>
-                    <a class="nav-link {% if request.path == '/cat_laser/' %}active{% endif %}"
-                        href="{% url 'cat_laser:index' %}">MC Laser</a>
+                    <!-- <a class="nav-link {% if request.path == '/cat_laser/' %}active{% endif %}"
+                        href="{% url 'cat_laser:index' %}">MC Laser</a> -->
                     <a class="nav-link {% if request.path == '/cat_laser_roi/' %}active{% endif %}"
-                        href="{% url 'cat_laser_roi:index' %}">MC Laser (Rời)</a>
+                        href="{% url 'cat_laser_roi:index' %}">MC Laser</a>
                 </nav>
             </div>
         </div>

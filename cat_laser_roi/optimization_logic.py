@@ -255,7 +255,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
 
         production_plan['SL cây sắt'] = plan_counts
 
-        print("<h4>TỔNG KẾT CẮT LASER (CẮT RỜI)</h4>")
+        print("<h4>TỔNG KẾT CẮT LASER</h4>")
         
         custom_formatter_int = lambda x: f"{int(x)}" if x == int(x) else f"{x:.1f}" # Dinh dang so nguyen hoac so thap phan 1 chu so
 
@@ -301,6 +301,9 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         # --- SỬA LỖI: Chia lại cột hao hụt trước khi hiển thị ---
         # print_plan['Hao hụt (mm)'] = print_plan['Hao hụt (mm)'] / SCALING_FACTOR
 
+        # Thay thế các giá trị 0 bằng chuỗi rỗng cho các cột sản phẩm 
+        for col in rename_map.values():
+            print_plan[col] = print_plan[col].apply(lambda x: '' if x == 0 else x)
 
         # Chỉ hiển thị các cột sản phẩm có số lượng cắt > 0
         # cols_to_show = [col for col in rename_map.values() if print_plan[col].sum() > 0]
