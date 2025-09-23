@@ -3,7 +3,7 @@
 {% block content %}
 <div class="row">
     <div class="col-md-6">
-        <h2 class="text-primary" style="margin-top: 0;">Máy cắt laser (cắt rời)</h2>
+        <h2 class="text-primary" style="margin-top: 0;">Máy cắt laser</h2>
         <form id="optimizationForm" method="post" novalidate>
             {% csrf_token %}
             <div class="mb-3">{{ form.stock_length.label_tag }} {{ form.stock_length }}</div>
@@ -86,7 +86,7 @@
             { type: 'numeric' },
             { type: 'numeric' }
         ],
-        rowHeaders: true, width: '100%', height: 240, licenseKey: 'non-commercial-and-evaluation',
+        rowHeaders: true, width: '100%', height: 450, licenseKey: 'non-commercial-and-evaluation',
         minSpareRows: 1, contextMenu: true, stretchH: 'all',
         afterChange: (changes, source) => {
             if (source !== 'loadData') {
