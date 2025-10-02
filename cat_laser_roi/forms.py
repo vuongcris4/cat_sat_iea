@@ -15,6 +15,11 @@ class OptimizationForm(forms.Form):
         required=False, 
         initial=True
     )
+    use_combined_mode = forms.BooleanField(
+        label="Chế độ cắt kết hợp Laser + Tự động", 
+        required=False, 
+        initial=False
+    )
     time_limit_minutes = forms.IntegerField(
         label="Thời gian chạy tối đa (3x phút)", 
         initial=2

@@ -17,7 +17,7 @@ debugpy==1.8.15
 decorator==5.2.1
 Django==5.1.5
 executing==2.2.0
-gurobipy==12.0.0
+gurobipy
 hyperlink==21.0.0
 idna==3.10
 immutabledict==4.2.1
@@ -34,7 +34,7 @@ matplotlib-inline==0.1.7
 msgpack==1.1.0
 nest-asyncio==1.6.0
 numpy==2.2.2
-ortools==9.12.4544
+ortools
 packaging==25.0
 pandas==2.2.3
 parso==0.8.4

@@ -3,9 +3,10 @@ from django.http import JsonResponse
 import json
 import sys
 import asyncio
+import time
+
 from channels.layers import get_channel_layer
 from iea_project.consumers import LOG_HISTORY
-
 from .forms import OptimizationForm
 from .optimization_logic import get_or_calculate_patterns, solve_phase2
 
@@ -45,14 +46,20 @@ def run_optimization(request):
             stock_length = data.get('stock_length')
             max_surplus = data.get('max_surplus')
             use_priority_constraint = data.get('use_priority_constraint')
+            # use_combined_mode = data.get('use_combined_mode')
             time_limit_minutes = data.get('time_limit_minutes')
             pieces_data = data.get('pieces_data')
+
+            if not pieces_data:  # FIXED: Added check for empty pieces_data to prevent index errors downstream.
+                print("❌ Không có dữ liệu đoạn cắt được cung cấp.<br>")
+                return JsonResponse({'status': 'error', 'message': 'Không có dữ liệu đoạn cắt.'}, status=400)
 
             piece_names = [str(item[0]) for item in pieces_data if item and item[0] is not None]
             
             piece_lengths = [float(item[1]) for item in pieces_data if item and item[1] is not None]
             demands_list = [int(item[2]) for item in pieces_data if item and item[2] is not None]
             priorities_list = [int(item[3]) for item in pieces_data if item and item[3] is not None]
+            is_doan_cuoi = [bool(item[4]) if len(item) > 4 else False for item in pieces_data if item]  # Nếu có bất kì dấu Tick nào thì lấy cột bool (Last), không thì cho mặc định toàn bộ là False
 
             patterns_data = get_or_calculate_patterns(
                 stock_length, piece_lengths, 1, 0.015, 10, 0
@@ -68,6 +75,7 @@ def run_optimization(request):
                     priorities_list,
                     max_surplus,
                     use_priority_constraint=use_priority_constraint,
+                    is_doan_cuoi=is_doan_cuoi,
                     time_limit_seconds=time_limit_minutes * 60
                 )
             
