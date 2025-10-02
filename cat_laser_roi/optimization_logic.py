@@ -355,6 +355,8 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
 
         # Thêm viền đậm bao quanh
         piece_size_cols = [col for col in print_plan.columns if 'mm' in col and 'Hao hụt' not in col]
+        # # Giới hạn độ rộng các cột kích thước để in vừa A4
+        plan_styler.set_properties(**{'width': '65px', 'max-width': '65px'}, subset=piece_size_cols)
         if piece_size_cols:
             first_col_idx = print_plan.columns.get_loc(piece_size_cols[0])
             last_col_idx = print_plan.columns.get_loc(piece_size_cols[-1])
