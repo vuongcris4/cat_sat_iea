@@ -7,6 +7,7 @@ import hashlib
 from datetime import datetime
 import time
 import threading
+import math 
 
 # HỆ SỐ ĐỂ NHÂN CÁC GIÁ TRỊ THẬP PHÂN THÀNH SỐ NGUYÊN
 # Chọn 100 để hỗ trợ 2 chữ số thập phân, có thể tăng lên 1000 nếu cần
@@ -24,7 +25,7 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
 
     # --- BẮT ĐẦU SỬA LỖI: Chuyển đổi tất cả sang số nguyên ---
     stock_length_int = int(stock_length * SCALING_FACTOR)
-    piece_lengths_int = [int(l * SCALING_FACTOR) for l in piece_lengths]
+    piece_lengths_int = [int(l * SCALING_FACTOR) for l in piece_lengths]    # KÍCH THƯỚC ĐOẠN
     kerf_width_int = int(kerf_width * SCALING_FACTOR)
     trim_start_int = int(trim_start * SCALING_FACTOR)
     # --- KẾT THÚC SỬA LỖI ---
@@ -32,7 +33,7 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
 
     model = cp_model.CpModel()
     num_pieces = len(piece_lengths_int)
-    counts = [model.NewIntVar(0, 30, f'segment_{i}') for i in range(num_pieces)]
+    counts = [model.NewIntVar(0, 30, f'segment_{i}') for i in range(num_pieces)]    # NGHIỆM THỨ 0, 1, 2, 3,... (tránh lỗi khi bị trùng kích thước)
 
     total_pieces_length = sum(counts[i] * piece_lengths_int[i] for i in range(num_pieces))
 
@@ -74,8 +75,8 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
         print(f"✅ GĐ 1: Tính toán thành công, tìm thấy {len(solution_collector.solutions)} patterns hiệu quả.<br>")
         df_patterns = pd.DataFrame(solution_collector.solutions)
         
-        segment_cols = [f'segment_{i}' for i in range(num_pieces)]
-        df_patterns['Tong_SL_Doan'] = df_patterns[segment_cols].sum(axis=1)    # Loc ra cac cot kich thuoc va tinh tong
+        segment_cols = [f'segment_{i}' for i in range(num_pieces)]  # HÀNG HEADER
+        df_patterns['Tong_SL_Doan'] = df_patterns[segment_cols].sum(axis=1)    # TỔNG SỐ LƯỢNG ĐOẠN TỪNG HÀNG, để tính hao hụt tia laser
         
         df_patterns['Tong_Dai_Doan'] = 0
         for i in range(num_pieces):
@@ -148,7 +149,7 @@ class SolverTimer(threading.Thread):
 # GIAI ĐOẠN 2
 # ===================================================================
 def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, demands_list, priorities_list,
-                 max_surplus, use_priority_constraint=False, time_limit_seconds=120.0):
+                 max_surplus, use_priority_constraint=False, is_doan_cuoi=None, time_limit_seconds=120.0):
     """
     Từ các pattern đã tìm thấy, xác định số lần thực hiện mỗi pattern
     để đáp ứng nhu cầu sản xuất và tối ưu hóa theo các mục tiêu.
@@ -178,6 +179,36 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
     else:
         print("--- Chế độ ưu tiên đang TẮT (chỉ tối ưu hao hụt và tồn kho) ---<br>")
         print(f"Sử dụng toàn bộ {len(patterns_df)} patterns đã tìm thấy.<br>")
+
+    # LOẠI BỎ CÁC PATTERNS KHÔNG THOẢ ĐIỀU KIỆN CẮT KẾT HỢP CẮT LASER VÀ TỰ ĐỘNG
+    if any(is_doan_cuoi):   # NẾU CÓ ÍT NHẤT MỘT DẤU TICK
+        """
+        Chỉ giữ lại các patterns thoả mãn một trong 3 điều kiện sau: 
+        - CÁC ĐOẠN ĐƯỢC TICK:
+            + TH kích thước đoạn >= 60: -> Có ít nhất một đoạn có nghiệm >= 1
+            + TH kích thước đoạn < 60: -> Có ít nhất một nghiệm >= trunc(60 / KÍCH THƯỚC ĐOẠN) + 1
+        - NẾU 2 ĐIỀU KIỆN TRÊN KHÔNG THOẢ MÃN THÌ:
+            + Hao hụt ít nhất 60mm
+        """
+        print("--- Chế độ cắt kết hợp Laser + Tự động đang BẬT ---<br>")
+        
+        selected_indices = [i for i, sel in enumerate(is_doan_cuoi) if sel]    # Lấy vị trí các segment được tick
+        long_ticked = [i for i in selected_indices if piece_lengths[i] >= 60] # 
+        short_ticked = [(i, math.trunc(60 / piece_lengths[i]) + 1) for i in selected_indices if piece_lengths[i] < 60]  # (Vị trí segment<60 , giới hạn dưới cần ít nhất bao nhiêu đoạn)
+        
+        original_pattern_count = len(patterns_df)
+        
+        def filter_combined(row):
+            has_long = any(row[f'segment_{i}'] >= 1 for i in long_ticked)   # CÁC THÍCH THƯỚC ĐOẠN DÀI CÓ ÍT NHẤT 1 đoạn có nghiệm >= 1 là ok
+            if has_long:
+                return True
+            has_short_double = any(row[f'segment_{i}'] >= lower_bound for (i, lower_bound) in short_ticked)   # CÁC THÍCH THƯỚC ĐOẠN NGẮN CÓ ÍT NHẤT 1 đoạn có nghiệm >= 2 là ok
+            if has_short_double:
+                return True
+            return row['Hao hụt (mm)'] >= (60 * SCALING_FACTOR)
+        
+        patterns_df = patterns_df[patterns_df.apply(filter_combined, axis=1)].copy()  # ÁP DỤNG ĐIỀU KIỆN CHO TỪNG HÀNG
+        print(f"Lọc pattern: Giữ lại {len(patterns_df)}/{original_pattern_count} patterns hợp lệ cho chế độ kết hợp.<br>")
 
     if len(patterns_df) == 0:
         print("❌ GĐ 2: Không có pattern nào để xử lý sau khi lọc.<br>")

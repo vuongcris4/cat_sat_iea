@@ -10,6 +10,7 @@
             <div class="mb-3">{{ form.max_surplus.label_tag }} {{ form.max_surplus }}</div>
             <div class="mb-3">{{ form.time_limit_minutes.label_tag }} {{ form.time_limit_minutes }}</div>
             <div class="form-check mb-3">{{ form.use_priority_constraint }} {{ form.use_priority_constraint.label_tag }}
+            <!-- <div class="form-check mb-3">{{ form.use_combined_mode }} {{ form.use_combined_mode.label_tag }} -->
             </div>
             <!-- <h4 class="mt-4">Chi tiết các đoạn cắt:</h4> -->
             <div id="handsontable-container" class="border rounded"></div>
@@ -67,24 +68,34 @@
     let tableData = JSON.parse(localStorage.getItem('handsontable_data'));
     if (!tableData) {
         tableData = [
-            ['Sắt A', 470, 3200, 1],
-            ['Sắt B', 460, 1600, 2],
-            ['Sắt C', 445, 3200, 4],
-            ['Sắt D', 430, 3200, 2],
-            ['Sắt E', 425, 1600, 1],
-            ['Sắt F', 190, 3200, 1],
-            ['Sắt G', 25, 3200, 0]
+            ['Sắt A', 470, 3200, 1, true],
+            ['Sắt B', 460, 1600, 2, true],
+            ['Sắt C', 445, 3200, 4, true],
+            ['Sắt D', 430, 3200, 2, true],
+            ['Sắt E', 425, 1600, 1, true],
+            ['Sắt F', 190, 3200, 1, true],
+            ['Sắt G', 25, 3200, 0, true]
         ];
+    } else {
+        // Ensure existing data has the new column
+        tableData = tableData.map(row => {
+            if (row.length < 5) {
+                const length = parseFloat(row[1]);
+                row.push(Number.isInteger(length));
+            }
+            return row;
+        });
     }
 
     const hot = new Handsontable(container, {
         data: tableData,
-        colHeaders: ['Tên sắt', 'Kích thước (mm)', 'SL Cần', 'Priority'],
+        colHeaders: ['Tên sắt', 'Kích thước (mm)', 'SL Cần', 'Priority', 'ĐOẠN CUỐI'],
         columns: [
             { type: 'text' },
             { type: 'numeric' },
             { type: 'numeric' },
-            { type: 'numeric' }
+            { type: 'numeric' },
+            { type: 'checkbox', className: 'htCenter' }
         ],
         rowHeaders: true, width: '100%', height: 450, licenseKey: 'non-commercial-and-evaluation',
         minSpareRows: 1, contextMenu: true, stretchH: 'all',
