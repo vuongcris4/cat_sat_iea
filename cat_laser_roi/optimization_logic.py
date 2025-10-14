@@ -10,11 +10,12 @@ import threading
 import math 
 
 # HỆ SỐ ĐỂ NHÂN CÁC GIÁ TRỊ THẬP PHÂN THÀNH SỐ NGUYÊN
-# Chọn 100 để hỗ trợ 2 chữ số thập phân, có thể tăng lên 1000 nếu cần
 SCALING_FACTOR = 10
+# GIỚI HẠN SỐ LƯỢNG PATTERN TỐI ĐA ĐỂ TÍNH TOÁN HOẶC TẢI LẠI
+SOLUTION_LIMIT = 100000
 
 # ===================================================================
-# GIAI ĐOẠN 1 (Không đổi)
+# GIAI ĐOẠN 1
 # ===================================================================
 def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay=0):
     """
@@ -58,18 +59,30 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
 
     solver = cp_model.CpSolver()
     solver.log_search_progress = False
+    
+    # --- SỬA ĐỔI: Cập nhật lớp callback để dừng khi đạt giới hạn ---
     class SolutionAndLogCollector(cp_model.CpSolverSolutionCallback):
-        def __init__(self, variables):
+        def __init__(self, variables, limit):
             cp_model.CpSolverSolutionCallback.__init__(self)
             self.__variables = variables
+            self.__solution_limit = limit
             self.solutions = []
+
         def on_solution_callback(self):
+            # Dừng tìm kiếm nếu đã đạt giới hạn
+            if len(self.solutions) >= self.__solution_limit:
+                self.StopSearch()
+                return
+            
             solution = {v.Name(): self.Value(v) for v in self.__variables}
             self.solutions.append(solution)
-    solution_collector = SolutionAndLogCollector(counts)
+            
+    # --- SỬA ĐỔI: Truyền giới hạn vào khi khởi tạo ---
+    solution_collector = SolutionAndLogCollector(counts, SOLUTION_LIMIT)
     solver.parameters.enumerate_all_solutions = True
 
-    print("Vui lòng chờ, bộ giải đang tìm kiếm các pattern... (GĐ 1)<br>")
+    print(f"Vui lòng chờ, bộ giải đang tìm kiếm các pattern (tối đa {SOLUTION_LIMIT:,} phương án)... (GĐ 1)<br>")
+
     status = solver.Solve(model, solution_collector)
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE) and solution_collector.solutions:
         print(f"✅ GĐ 1: Tính toán thành công, tìm thấy {len(solution_collector.solutions)} patterns hiệu quả.<br>")
@@ -110,7 +123,17 @@ def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste
         print(f"👍 GĐ 1: Đã tìm thấy file nghiệm '{filename}'. Đang tải lại...<br>")
         with open(filename, 'rb') as f:
             patterns = pickle.load(f)
-        print(f"✅ GĐ 1: Tải lại thành công! Tìm thấy {len(patterns)} patterns đã lưu.<br>")
+        # --- THÊM BƯỚC LỌC TẠI ĐÂY ---
+        # Lọc kết quả từ file cache nếu nó lớn hơn giới hạn cho phép
+        if len(patterns) > SOLUTION_LIMIT:
+            original_count = len(patterns)
+            # Vì các patterns đã được sắp xếp theo hao hụt khi lưu,
+            # lấy N hàng đầu tiên chính là lấy N patterns tốt nhất.
+            patterns = patterns.head(SOLUTION_LIMIT)
+            print(f"⚠️ File cache chứa {original_count:,} patterns, đã được lọc lại còn **{len(patterns):,} patterns tốt nhất**.<br>")
+        
+        print(f"✅ GĐ 1: Tải lại thành công! Sử dụng {len(patterns):,} patterns đã lưu.<br>")
+
         return patterns
     else:
         patterns = find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay)
