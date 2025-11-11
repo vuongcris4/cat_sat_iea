@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from collections import Counter
 import time
-import threading  # <-- Đã có
+import threading
 
 # OR-Tools CP-SAT
 from ortools.sat.python import cp_model
@@ -37,22 +37,35 @@ class SolverTimer(threading.Thread):
     def stop(self):
         self.stop_event.set()
 
+
 # ===================================================================
-# Lớp Tối Ưu Hóa
+# Lớp Tối Ưu Hóa (Phần 1: cache + tìm pattern)
 # ===================================================================
 class SteelCuttingOptimizer:
-    # ... ( __init__ giữ nguyên, vẫn nhận time_limit_seconds ) ...
-    def __init__(self, length, te_dau_sat, segment_sizes, demands, blade_width, factors, max_manual_cuts, max_stock_over, time_limit_seconds=30.0): # <-- THÊM time_limit_seconds
+    # __init__ vẫn nhận time_limit_seconds
+    def __init__(
+        self,
+        length,
+        te_dau_sat,
+        segment_sizes,
+        demands,
+        blade_width,
+        factors,
+        max_manual_cuts,
+        max_stock_over,
+        time_limit_seconds=30.0,
+    ):
         self.length = length
         self.te_dau_sat = te_dau_sat
         self.segment_sizes = np.array(segment_sizes)
         self.demands = np.array(demands)
         self.blade_width = blade_width
-        # đảm bảo factors có [1, 0] để khống chế cắt tay và chọn 0
+        # đảm bảo factors có [1, 0] để khống chế cắt tay và “không chọn”
+        # (GĐ2 sẽ tự lọc factor==0 để tránh biến vô nghĩa)
         self.factors = sorted(factors, reverse=True) + [1, 0]
         self.max_manual_cuts = max_manual_cuts
         self.max_stock_over = max_stock_over
-        self.time_limit_seconds = time_limit_seconds  # <-- THÊM MỚI
+        self.time_limit_seconds = time_limit_seconds
 
         self.solutions = []
         self.solution_matrix = None
@@ -61,8 +74,8 @@ class SteelCuttingOptimizer:
         self.BASE_DIR = Path(__file__).resolve().parents[1]  # .../cat_sat_iea
         self.CACHE_DIR = self.BASE_DIR / "pattern_cache"
         self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    
-    # ... (Các hàm cache _cache_key, _cache_path, save_solution_to_pickle, cut_list, load_solution_from_pickle giữ nguyên) ...
+
+    # -------------- Cache helpers --------------
     def _cache_key(self):
         payload = {
             "length": int(self.length),
@@ -84,7 +97,8 @@ class SteelCuttingOptimizer:
             pickle.dump(self.solutions, f, protocol=pickle.HIGHEST_PROTOCOL)
         os.replace(tmp, path)
 
-    def cut_list(self, lst, x, length):   # list_solutions, te_dau_sat, length
+    def cut_list(self, lst, x, length):
+        """Áp tề đầu: bỏ các pattern có obj_value + te_dau > length."""
         for i, (obj_value, solution) in enumerate(lst):
             if obj_value + x <= length:
                 return lst[i:]
@@ -94,9 +108,8 @@ class SteelCuttingOptimizer:
         path = self._cache_path()
         if not path.exists():
             return []
-
         try:
-            list_solutions = pickle.load(f) if False else None  # silence linter
+            list_solutions = None
             with open(path, "rb") as f:
                 list_solutions = pickle.load(f)  # [(obj_value, [x_i,...]), ...]
         except Exception:
@@ -111,23 +124,34 @@ class SteelCuttingOptimizer:
         list_solutions = self.cut_list(list_solutions, self.te_dau_sat, self.length)
 
         # VÌ MCTD CHỈ NHẬP TỐI ĐA 5 INPUT
-        # Lọc theo tiêu chí <=5 loại đoạn khác 0 khi có >5 size (giống bản cũ)
+        # Lọc theo tiêu chí <=5 loại đoạn khác 0 khi có >5 size
         if len(self.segment_sizes) > 5:
             filtered = [
-                (obj_value, solution) for obj_value, solution in list_solutions
+                (obj_value, solution)
+                for obj_value, solution in list_solutions
                 if sum(1 for x in solution if x != 0) <= 5
             ]
             return filtered
         else:
             return list_solutions
 
+
 # =========================================================
-# GIAI ĐOẠN 1 MỚI: Thu thập nghiệm bằng SolutionCallback
+# GIAI ĐOẠN 1: Thu thập nghiệm bằng SolutionCallback
 # =========================================================
 class SolutionAndLogCollector(cp_model.CpSolverSolutionCallback):
-    # ... (Giữ nguyên) ...
-    def __init__(self, vars_x, seg_scaled, blade_scaled, scale, length, te_dau_sat,
-                 exclude_set, accept_at_most=1000, print_every=1):
+    def __init__(
+        self,
+        vars_x,
+        seg_scaled,
+        blade_scaled,
+        scale,
+        length,
+        te_dau_sat,
+        exclude_set,
+        accept_at_most=1000,
+        print_every=100,
+    ):
         super().__init__()
         self._vars_x = vars_x
         self._seg_scaled = seg_scaled
@@ -137,7 +161,7 @@ class SolutionAndLogCollector(cp_model.CpSolverSolutionCallback):
         self._te = te_dau_sat
         self._exclude = exclude_set  # set(tuple(x))
         self._seen = set()
-        self._solutions = []         # list[(obj_value, [x_i,...])]
+        self._solutions = []  # list[(obj_value, [x_i,...])]
         self._accept_at_most = accept_at_most
         self._print_every = max(1, print_every)
         self._cnt = 0
@@ -179,15 +203,14 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
     # -----------------------------
     # Batch tìm nghiệm dùng callback
     # -----------------------------
-    def _solve_single_bar_batch(self, max_solutions=1000, time_limit_sec=None): # <-- Sửa: bỏ giá trị time_limit_sec
+    def _solve_single_bar_batch(self, max_solutions=1000, time_limit_sec=None):
         """
         Tạo mô hình thỏa mãn với ràng buộc:
-          - length*(1-0.01) <= sum(seg[i]*x_i) + blade_width * sum(x_i) <= length - te_dau_sat
+          - length*(1-0.01) <= sum(seg[i]*x_i) + blade_width * sum(x_i) <= length
           - 0 <= x_i <= 30, integer
         Dùng CpSolverSolutionCallback để duyệt nghiệm nhanh, lọc trùng bằng set.
         Trả về list[(obj_value_mm, [x_i,...])], đã sort theo obj_value giảm dần.
         """
-        # --- THÊM MỚI: Log ---
         print(f"Bắt đầu GĐ 1: Tìm các pattern (tối đa {max_solutions:,} phương án). Vui lòng chờ...<br>")
         model = cp_model.CpModel()
 
@@ -200,15 +223,15 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         seg_scaled = [int(round(s * scale)) for s in self.segment_sizes.tolist()]
         blade_scaled = int(round(self.blade_width * scale))
         length_scaled = int(round(self.length * scale))
-        te_scaled = int(round(self.te_dau_sat * scale))
+        te_scaled = int(round(self.te_dau_sat * scale))  # giữ để tham khảo, B1 không dùng
 
         objective_scaled = cp_model.LinearExpr.Sum(
             [seg_scaled[i] * vars_x[i] for i in range(n)]
         ) + blade_scaled * sum_x
 
-        # ràng buộc cửa sổ hao hụt (giữ như cũ, 1% hao hụt tối thiểu)
+        # ràng buộc cửa sổ hao hụt (1% hao hụt tối thiểu)
         lower = int(round(length_scaled * (1 - 0.01)))
-        upper = int(round(length_scaled))   # ---------------------- KHÔNG LẤY te_scaled nữa, B1 vẫn giải full, tới lúc load mới lấy từ tề đầu trở đi
+        upper = int(round(length_scaled))  # B1 giải full cây; tề đầu áp khi load cache
         model.Add(objective_scaled >= lower)
         model.Add(objective_scaled <= upper)
 
@@ -216,10 +239,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         solver = cp_model.CpSolver()
         solver.parameters.enumerate_all_solutions = True
         solver.parameters.log_search_progress = True
-        
-        # --- THAY ĐỔI: Bỏ time limit ---
-        # solver.parameters.max_time_in_seconds = float(self.time_limit_seconds) # <-- BỎ DÒNG NÀY
-        
+
+        # KHÔNG dùng time limit cho GĐ1 (đã bỏ)
         solver.parameters.num_search_workers = 1
 
         # chuẩn bị exclude từ cache hiện có (nếu có)
@@ -235,14 +256,13 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             length=self.length,
             te_dau_sat=self.te_dau_sat,
             exclude_set=exclude_set,
-            accept_at_most=max_solutions, # <-- Sẽ được set là 100,000 từ optimize_cutting
-            print_every=100 # <-- In ít lại
+            accept_at_most=max_solutions,
+            print_every=100,
         )
 
         # chạy tìm tất cả nghiệm (giới hạn bởi solution_limit)
         solver.SearchForAllSolutions(model, collector)
 
-        # --- THÊM MỚI: Log ---
         print(f"GĐ 1: Tìm thấy {len(collector.solutions)} patterns.<br>")
         return collector.solutions
 
@@ -258,16 +278,12 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
         # Nếu cache chưa đủ, dùng batch callback để lấy nhanh nghiệm mới
         if not self.solutions:
-            # --- THAY ĐỔI: Giống cat_laser_roi ---
-            MAX_SOLUTIONS = 100000 
-            # TIME_LIMIT_SEC = 5.0 (Không dùng nữa)
-
+            MAX_SOLUTIONS = 100000
             batch = self._solve_single_bar_batch(
                 max_solutions=MAX_SOLUTIONS,
-                time_limit_sec=None # <-- Không dùng nữa
+                time_limit_sec=None
             )
             if not batch:
-                # <-- Lỗi này vẫn có thể xảy ra nếu không tìm thấy gì
                 raise ValueError("Không tìm được nghiệm phù hợp cho 1 cây sắt (GĐ 1).")
 
             self.solutions = batch
@@ -281,99 +297,135 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         return self.solutions
 
     # -----------------------------
-    # Giai đoạn 2: Phân phối số bó (CP-SAT)
+    # Giai đoạn 2: Phân phối số bó (CP-SAT gọn O(n·R))
     # -----------------------------
     def optimize_distribution(self):
-        # --- THÊM MỚI: Log ---
-        print("<br>Bắt đầu GĐ 2: Phân phối bó...<br>")
+        print("<br>Bắt đầu GĐ 2: Phân phối bó (mô hình gọn O(n·R))...<br>")
         if self.solution_matrix is None:
             raise ValueError("Run optimize_cutting first to generate solution matrix.")
 
-        A = self.solution_matrix.T               # m x n
-        L = np.array([self.length - sol[0] for sol in self.solutions], dtype=int)
-
+        # A: m x n (m = số loại đoạn, n = số pattern)
+        A = self.solution_matrix.T
+        L = np.array([self.length - sol[0] for sol in self.solutions], dtype=int)  # hao hụt / cây cho pattern j
         m, n = A.shape
-        k = 30  # số cột bó sắt
+
+        # Chỉ dùng các factor > 0 (0 nghĩa là không chọn)
+        pos_factors = [f for f in self.factors if f > 0]
+        idx_one = None
+        if 1 in pos_factors:
+            idx_one = pos_factors.index(1)
 
         model = cp_model.CpModel()
 
-        R = len(self.factors)
-        z = [[[model.NewBoolVar(f"z_{i}_{j}_{r}") for r in range(R)] for j in range(k)] for i in range(n)]
-        max_factor = max(self.factors)
-        x = [[model.NewIntVar(0, max_factor, f"x_{i}_{j}") for j in range(k)] for i in range(n)]
+        # Upper bound chặt cho từng (j,r) để thu gọn không gian nghiệm
+        def safe_div_ceil(a, b):
+            return (a + b - 1) // b
 
-        for i in range(n):
-            for j in range(k):
-                model.Add(sum(z[i][j][r] for r in range(R)) == 1)
-                model.Add(x[i][j] == sum(self.factors[r] * z[i][j][r] for r in range(R)))
+        # UB[j] = min_i ceil((demands_i + max_stock_over)/A[i,j]) với a_ij>0
+        UB = []
+        for j in range(n):
+            caps = []
+            for i in range(m):
+                aij = int(A[i, j])
+                if aij > 0:
+                    caps.append(safe_div_ceil(int(self.demands[i]) + int(self.max_stock_over), aij))
+            if caps:
+                UB.append(min(caps))
+            else:
+                UB.append(0)  # pattern không tạo ra đoạn nào
 
-        index_of_one = self.factors.index(1)
-        model.Add(
-            sum(z[i][j][index_of_one] for i in range(n) for j in range(k)) <= self.max_manual_cuts
-        )
+        # Biến b[j][r] = số bó pattern j với hệ số fr (fr ∈ pos_factors)
+        b = []
+        for j in range(n):
+            row = []
+            for fr in pos_factors:
+                ub = safe_div_ceil(UB[j], fr) if UB[j] > 0 else 0
+                row.append(model.NewIntVar(0, max(0, ub), f"b_{j}_{fr}"))
+            b.append(row)
 
-        C = [model.NewIntVar(0, 10**9, f"C_{i}") for i in range(A.shape[0])]
-        for i_row in range(A.shape[0]):
-            expr = []
-            for j_col in range(n):
-                coeff = int(A[i_row, j_col])
-                if coeff != 0:
-                    for col in range(k):
-                        expr.append(coeff * x[j_col][col])
-            model.Add(C[i_row] == (sum(expr) if expr else 0))
-            model.Add(C[i_row] - int(self.demands[i_row]) >= 0)
-            model.Add(C[i_row] - int(self.demands[i_row]) <= int(self.max_stock_over))
+        # Tổng số cây sắt theo pattern j: sum_r fr * b[j][r]
+        def bars_of_pattern(j):
+            terms = []
+            for r, fr in enumerate(pos_factors):
+                if fr != 0:
+                    terms.append(fr * b[j][r])
+            return sum(terms) if terms else 0
 
-        Loss_terms = []
-        for j_col in range(n):
-            if int(L[j_col]) != 0:
-                Loss_terms.append(int(L[j_col]) * sum(x[j_col][col] for col in range(k)))
-        Loss_expr = sum(Loss_terms) if Loss_terms else 0
+        # Nhu cầu từng loại đoạn (khoảng [demands, demands+max_stock_over])
+        C = []
+        for i in range(m):
+            contrib = []
+            for j in range(n):
+                aij = int(A[i, j])
+                if aij != 0:
+                    contrib.append(aij * bars_of_pattern(j))
+            Ci = model.NewIntVar(0, 10**12, f"C_{i}")
+            model.Add(Ci == (sum(contrib) if contrib else 0))
+            model.Add(Ci >= int(self.demands[i]))
+            model.Add(Ci <= int(self.demands[i]) + int(self.max_stock_over))
+            C.append(Ci)
 
-        index_of_zero = self.factors.index(0)
-        num_zeros_expr = sum(z[i][j][index_of_zero] for i in range(n) for j in range(k))
+        # Giới hạn số lần cắt tay (factor == 1)
+        if idx_one is not None:
+            manual_cuts = sum(b[j][idx_one] for j in range(n))
+            model.Add(manual_cuts <= int(self.max_manual_cuts))
 
+        # Mục tiêu: minimize hao hụt tổng + tie-break nhỏ cho số bó
+        loss_terms = []
+        bundle_terms = []
+        for j in range(n):
+            bj = bars_of_pattern(j)
+            loss_terms.append(int(L[j]) * bj)
+            for r in range(len(pos_factors)):
+                bundle_terms.append(b[j][r])
+
+        Loss_expr = sum(loss_terms) if loss_terms else 0
+        Bundles_expr = sum(bundle_terms) if bundle_terms else 0
+
+        # W1 lớn để ưu tiên hao hụt; W2 nhỏ để giảm số bó khi bằng điểm
         W1 = 10**6
         W2 = 1
-        model.Minimize(Loss_expr * W1 - num_zeros_expr * W2)
+        model.Minimize(Loss_expr * W1 + Bundles_expr * W2)
 
+        # Giải
         solver = cp_model.CpSolver()
         solver.parameters.log_search_progress = False
-        # --- CHỖ NÀY ĐÃ ĐÚNG: GĐ 2 dùng time limit ---
-        solver.parameters.max_time_in_seconds = self.time_limit_seconds
+        solver.parameters.max_time_in_seconds = float(self.time_limit_seconds)
         solver.parameters.num_search_workers = 8
 
         status = solver.Solve(model)
 
-        print("!CLEAR!")  # XÓA LOG TRƯỚC KHI IN KẾT QUẢ
+        print("!CLEAR!")  # Xóa log trước khi in kết quả
 
         if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-            print("Dui lòng tăng số đoạn cắt thủ công hoặc số tồn kho chứ VÔ NGHIỆM rùi!!!!")
-            # --- Sửa thông báo lỗi ---
+            print("Vô nghiệm / hết thời gian trong GĐ 2 — hãy tăng cắt tay hoặc tồn kho tối đa!")
             raise ValueError("Không tìm được nghiệm tối ưu (GĐ 2) trong thời gian giới hạn.")
 
-        x_optimal = np.array([[solver.Value(x[i][j]) for j in range(k)] for i in range(n)])
+        # Thu kết quả (n x |pos_factors|): số bó theo từng pattern & factor
+        b_opt = np.zeros((n, len(pos_factors)), dtype=int)
+        for j in range(n):
+            for r in range(len(pos_factors)):
+                b_opt[j, r] = int(solver.Value(b[j][r]))
 
+        # In báo cáo giống logic cũ
         print("Kích thước đoạn (mm): ")
         print(f"{self.segment_sizes}<br>")
 
-        tong_lan_cat = 0
+        tong_lan_cat = int(b_opt.sum())  # tổng số bó
         tong_cat_tay = 0
+        total_bars = 0
 
-        for row_index in range(n):
-            row = x_optimal[row_index, :]
-            non_zero = row[row != 0]
-            if non_zero.size > 0:
-                counts = Counter(non_zero)
-                print("Chọn: ", A[:, row_index], " Hao hụt: ", str(L[row_index]) + " mm/cây<br>")
-                for num, count in counts.items():
-                    print(f"\t{num} cây/bó: {count} lần<br>")
-                    if num == 1:
-                        tong_cat_tay += count
-                    tong_lan_cat += count
+        for j in range(n):
+            counts = {pos_factors[r]: b_opt[j, r] for r in range(len(pos_factors)) if b_opt[j, r] > 0}
+            if counts:
+                print("Chọn: ", A[:, j], " Hao hụt: ", str(int(L[j])) + " mm/cây<br>")
+                for fr, cnt in counts.items():
+                    print(f"\t{fr} cây/bó: {cnt} lần<br>")
+                    total_bars += fr * cnt
+                    if fr == 1:
+                        tong_cat_tay += cnt
 
-        tong_sat = int(x_optimal.sum())
-        C_vals = np.array([solver.Value(C[i]) for i in range(m)])
+        C_vals = np.array([int(solver.Value(C[i])) for i in range(m)], dtype=int)
 
         print("____<br>")
         print("Yêu cầu: <br>")
@@ -381,22 +433,23 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         print("Đã cắt được: <br>")
         print(f"{C_vals}<br>")
         print("____<br>")
-        print(f"Tổng lần cắt: {tong_lan_cat}<br>")
-        print("Trong đó: cắt máy: ", tong_sat - tong_cat_tay, " cây, ", " cắt tay: ", tong_cat_tay, " cây<br>")
+        print(f"Tổng lần cắt (số bó): {tong_lan_cat}<br>")
+        print("Trong đó: cắt máy: ", total_bars - tong_cat_tay, " cây, ", " cắt tay: ", tong_cat_tay, " cây<br>")
 
         time_estimate = tong_cat_tay * 5 + (tong_lan_cat - tong_cat_tay) * 4
         print("Thời gian ước tính: ", time_estimate // 60, " giờ ", time_estimate % 60, " phút<br>")
         print("____<br>")
-        print("Tổng cây sắt cần: ", tong_sat, " cây<br>")
+        print("Tổng cây sắt cần: ", total_bars, " cây<br>")
 
         Loss_value = 0
-        for j_col in range(n):
-            count_j = sum(solver.Value(x[j_col][col]) for col in range(k))
-            Loss_value += int(L[j_col]) * count_j
+        for j in range(n):
+            count_j = sum(pos_factors[r] * b_opt[j, r] for r in range(len(pos_factors)))
+            Loss_value += int(L[j]) * count_j
 
-        print("Cắt được: ", (self.length * tong_sat - Loss_value) / 1000, "m<br>")
+        print("Cắt được: ", (self.length * total_bars - Loss_value) / 1000, "m<br>")
         print("Hao hụt: ", Loss_value / 1000, "m<br>")
-        if self.length * tong_sat > 0:
-            print(f"Hao hụt: {(Loss_value / (self.length * tong_sat)) * 100:.2f}%<br>")
+        if self.length * total_bars > 0:
+            print(f"Hao hụt: {(Loss_value / (self.length * total_bars)) * 100:.2f}%<br>")
 
-        return x_optimal
+        # Trả về ma trận (n x |pos_factors|) để views.py .tolist() gửi ra client
+        return b_opt
