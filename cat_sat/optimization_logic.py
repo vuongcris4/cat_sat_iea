@@ -1,11 +1,15 @@
 import os
 import json
+import pickle
+import hashlib
+from pathlib import Path
 import numpy as np
-import gurobipy as gp
-from gurobipy import GRB
 from collections import Counter
-from django.db import models
-from .models import Solution
+import time
+
+# OR-Tools CP-SAT
+from ortools.sat.python import cp_model
+
 
 class SteelCuttingOptimizer:
     def __init__(self, length, te_dau_sat, segment_sizes, demands, blade_width, factors, max_manual_cuts, max_stock_over):
@@ -14,238 +18,349 @@ class SteelCuttingOptimizer:
         self.segment_sizes = np.array(segment_sizes)
         self.demands = np.array(demands)
         self.blade_width = blade_width
-        self.factors = sorted(factors, reverse=True) + [1, 0]  # Ensure proper factor ordering
+        # đảm bảo factors có [1, 0] để khống chế cắt tay và chọn 0
+        self.factors = sorted(factors, reverse=True) + [1, 0]
         self.max_manual_cuts = max_manual_cuts
         self.max_stock_over = max_stock_over
+
         self.solutions = []
         self.solution_matrix = None
 
-    def save_solution_to_model(self):
-        for obj_value, solution in self.solutions:
-            if not Solution.objects.filter(length=self.length, segment_sizes=self.segment_sizes.tolist(), blade_width=self.blade_width, solution=solution).exists():
-                Solution.objects.create(
-                    length=self.length,
-                    segment_sizes=self.segment_sizes.tolist(),
-                    blade_width=self.blade_width,
-                    obj_value=obj_value,
-                    solution=solution
-                )
-    
-    def cut_list(self, lst, x, length):   # Tề đầu
-        # Tìm vị trí đầu tiên thỏa mãn điều kiện obj_value + x <= length
+        # ---- Pickle cache setup: pattern_cache nằm cùng cấp project folder ----
+        self.BASE_DIR = Path(__file__).resolve().parents[1]  # .../cat_sat_iea
+        self.CACHE_DIR = self.BASE_DIR / "pattern_cache"
+        self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    # -----------------------------
+    # Pickle cache helpers
+    # -----------------------------
+    def _cache_key(self):
+        payload = {
+            "length": int(self.length),
+            "segment_sizes": list(map(float, self.segment_sizes.tolist())),
+            "blade_width": float(self.blade_width),
+        }
+        s = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+        return hashlib.md5(s.encode("utf-8")).hexdigest()
+
+    def _cache_path(self):
+        key = self._cache_key()
+        return self.CACHE_DIR / f"patterns_{key}.pkl"
+
+    def save_solution_to_pickle(self):
+        """Lưu list[(obj_value, solution)] vào file pickle."""
+        path = self._cache_path()
+        tmp = str(path) + ".tmp"
+        with open(tmp, "wb") as f:
+            pickle.dump(self.solutions, f, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(tmp, path)
+
+    def cut_list(self, lst, x, length):   # list_solutions, te_dau_sat, length
         for i, (obj_value, solution) in enumerate(lst):
             if obj_value + x <= length:
-                return lst[i:]  # Cắt từ vị trí này trở đi
-        return []  # Trả về danh sách rỗng nếu không có phần tử nào thỏa mãn
+                return lst[i:]
+        return []
 
+    def load_solution_from_pickle(self):
+        path = self._cache_path()
+        if not path.exists():
+            return []
 
-    def load_solution_from_model(self):
-        # solutions = Solution.objects.filter(length=self.length, segment_sizes=self.segment_sizes.tolist(), blade_width=self.blade_width)
-        # return [(s.obj_value, s.solution) for s in solutions]
-        solutions = Solution.objects.filter(
-            length=self.length,
-            segment_sizes=self.segment_sizes.tolist(),
-            blade_width=self.blade_width
-        )
-
-        if 0 < solutions.count() < 10:
-            print("DANH SÁCH NGHIỆM QUÁ NHỎ, ĐANG GIẢI LẠI!!!!")
-            solutions.delete()
-
-        list_solutions = list(solutions.values_list('obj_value', 'solution'))
+        try:
+            list_solutions = pickle.load(f) if False else None  # silence linter
+            with open(path, "rb") as f:
+                list_solutions = pickle.load(f)  # [(obj_value, [x_i,...]), ...]
+        except Exception:
+            # Hỏng file cache => bỏ qua
+            return []
 
         print("------------------------------------------------<br>")
-        print(f"ĐÃ CÓ {len(list_solutions)} NGHIỆM TRONG CSDL<br>")
+        print(f"ĐÃ CÓ {len(list_solutions)} NGHIỆM TRONG CACHE<br>")
         print("------------------------------------------------<br>")
 
-        list_solutions = self.cut_list(list_solutions, self.te_dau_sat, self.length)    # Tăng độ hao hụt >= một số cho trước
+        # Áp tề đầu
+        list_solutions = self.cut_list(list_solutions, self.te_dau_sat, self.length)
 
-        # CẬP NHẬT THÊM CHỖ MÁY CẮT TỰ ĐỘNG
+        # VÌ MCTD CHỈ NHẬP TỐI ĐA 5 INPUT
+        # Lọc theo tiêu chí <=5 loại đoạn khác 0 khi có >5 size (giống bản cũ)
         if len(self.segment_sizes) > 5:
-            # MÁY CẮT TỰ ĐỘNG KHÔNG NHẬP QUÁ 5 LẦN
-
-            filtered_solutions = [
+            filtered = [
                 (obj_value, solution) for obj_value, solution in list_solutions
                 if sum(1 for x in solution if x != 0) <= 5
             ]
-
-            return filtered_solutions
-        else:        
+            return filtered
+        else:
             return list_solutions
 
+    # =========================================================
+    # GIAI ĐOẠN 1 MỚI: Thu thập nghiệm bằng SolutionCallback
+    # =========================================================
+class SolutionAndLogCollector(cp_model.CpSolverSolutionCallback):
+    """
+    Callback duyệt nghiệm thỏa mãn trong cửa sổ hao hụt.
+    - Lọc trùng bằng set
+    - Loại nghiệm đã có trong cache (exclude_set)
+    - Ghi log mỗi nghiệm bắt được
+    - Cắt theo accept_at_most và max_time_in_seconds (bên solver)
+    """
+    def __init__(self, vars_x, seg_scaled, blade_scaled, scale, length, te_dau_sat,
+                 exclude_set, accept_at_most=1000, print_every=1):
+        super().__init__()
+        self._vars_x = vars_x
+        self._seg_scaled = seg_scaled
+        self._blade_scaled = blade_scaled
+        self._scale = scale
+        self._length = length
+        self._te = te_dau_sat
+        self._exclude = exclude_set  # set(tuple(x))
+        self._seen = set()
+        self._solutions = []         # list[(obj_value, [x_i,...])]
+        self._accept_at_most = accept_at_most
+        self._print_every = max(1, print_every)
+        self._cnt = 0
+        self._start = time.time()
+
+    def on_solution_callback(self):
+        # đọc nghiệm
+        x = [int(self.Value(v)) for v in self._vars_x]
+        key = tuple(x)
+
+        # bỏ nghiệm trùng hoặc đã có trong cache
+        if key in self._seen or key in self._exclude:
+            return
+
+        # tính objective ở thang float
+        sum_x = sum(x)
+        obj_scaled = sum(self._seg_scaled[i] * x[i] for i in range(len(x))) + self._blade_scaled * sum_x
+        obj_value = obj_scaled / self._scale  # mm
+
+        self._solutions.append((obj_value, x))
+        self._seen.add(key)
+
+        self._cnt += 1
+        if self._cnt % self._print_every == 0:
+            hao_hut = self._length - obj_value
+            print(f"{x}, Hao hụt {hao_hut}/cây<br>")
+
+        # dừng sớm khi đủ số nghiệm mong muốn
+        if len(self._solutions) >= self._accept_at_most:
+            self.StopSearch()
+
+    @property
+    def solutions(self):
+        # sắp xếp theo obj_value giảm dần để ưu tiên phương án hao hụt nhỏ
+        return sorted(self._solutions, key=lambda t: t[0], reverse=True)
+
+
+class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên để gom file một chỗ
+    # -----------------------------
+    # Batch tìm nghiệm dùng callback
+    # -----------------------------
+    def _solve_single_bar_batch(self, max_solutions=1000, time_limit_sec=5.0):
+        """
+        Tạo mô hình thỏa mãn với ràng buộc:
+          - length*(1-0.01) <= sum(seg[i]*x_i) + blade_width * sum(x_i) <= length - te_dau_sat
+          - 0 <= x_i <= 30, integer
+        Dùng CpSolverSolutionCallback để duyệt nghiệm nhanh, lọc trùng bằng set.
+        Trả về list[(obj_value_mm, [x_i,...])], đã sort theo obj_value giảm dần.
+        """
+        model = cp_model.CpModel()
+
+        n = len(self.segment_sizes)
+        vars_x = [model.NewIntVar(0, 30, f"x_{i}") for i in range(n)]
+        sum_x = cp_model.LinearExpr.Sum(vars_x)
+
+        # scale integer hóa
+        scale = 100
+        seg_scaled = [int(round(s * scale)) for s in self.segment_sizes.tolist()]
+        blade_scaled = int(round(self.blade_width * scale))
+        length_scaled = int(round(self.length * scale))
+        te_scaled = int(round(self.te_dau_sat * scale))
+
+        objective_scaled = cp_model.LinearExpr.Sum(
+            [seg_scaled[i] * vars_x[i] for i in range(n)]
+        ) + blade_scaled * sum_x
+
+        # ràng buộc cửa sổ hao hụt (giữ như cũ, 1% hao hụt tối thiểu)
+        lower = int(round(length_scaled * (1 - 0.01)))
+        upper = int(round(length_scaled - te_scaled))
+        model.Add(objective_scaled >= lower)
+        model.Add(objective_scaled <= upper)
+
+        # Bật enumerate all solutions (bài toán thỏa mãn)
+        solver = cp_model.CpSolver()
+        solver.parameters.enumerate_all_solutions = True
+        solver.parameters.log_search_progress = False
+        solver.parameters.max_time_in_seconds = float(time_limit_sec)
+        solver.parameters.num_search_workers = 8
+
+        # chuẩn bị exclude từ cache hiện có (nếu có)
+        exclude_set = set()
+        for _, sol in self.solutions:
+            exclude_set.add(tuple(int(v) for v in sol))
+
+        collector = SolutionAndLogCollector(
+            vars_x=vars_x,
+            seg_scaled=seg_scaled,
+            blade_scaled=blade_scaled,
+            scale=scale,
+            length=self.length,
+            te_dau_sat=self.te_dau_sat,
+            exclude_set=exclude_set,
+            accept_at_most=max_solutions,
+            print_every=1
+        )
+
+        # chạy tìm tất cả nghiệm (giới hạn bởi time và solution_limit)
+        solver.SearchForAllSolutions(model, collector)
+
+        return collector.solutions
+
     def optimize_cutting(self):
-        self.solutions = self.load_solution_from_model()
+        # Ưu tiên dùng nghiệm cache (sau khi lọc theo tề đầu)
+        self.solutions = self.load_solution_from_pickle()
 
-        # Tìm nghiệm cho 1 cây sắt
         if not self.solutions:
-            print("Chưa có nghiệm trong CSDL, đang tìm nghiệm")
-            model = gp.Model("Steel Cutting Optimization")
-            model.setParam('OutputFlag', 0) # Tắt log mặc định ra CMD
+            print("Chưa có nghiệm trong CACHE, đang tìm nghiệm<br>")
+        elif 0 < len(self.solutions) < 10:
+            print("DANH SÁCH NGHIỆM QUÁ NHỎ, ĐANG GIẢI LẠI!!!!<br>")
+            self.solutions = []
 
+        # Nếu cache chưa đủ, dùng batch callback để lấy nhanh nghiệm mới
+        if not self.solutions:
+            MAX_SOLUTIONS = 1000
+            TIME_LIMIT_SEC = 5.0
 
-            variables = []  # biến x1, x2, x3, x4
-            # Ràng buộc 0<=x<=30
-            for i in range(len(self.segment_sizes)):
-                var = model.addVar(lb=0, ub=30, vtype=GRB.INTEGER, name=f"var_{i+1}")   # Ràng buộc cho từng biến xi
-                variables.append(var)
+            batch = self._solve_single_bar_batch(
+                max_solutions=MAX_SOLUTIONS,
+                time_limit_sec=TIME_LIMIT_SEC
+            )
+            if not batch:
+                raise ValueError("Không tìm được nghiệm phù hợp cho 1 cây sắt trong thời gian giới hạn.")
 
-            total_sum = gp.quicksum(variables)  # Tổng x + y + z + t
-            objective = (
-                gp.quicksum(self.segment_sizes[i] * variables[i] for i in range(len(variables))) +
-                self.blade_width * total_sum
-            )   # Hàm mục tiêu: vd: 500x + 255y + 600z + 615t + 2.5*(x+y+z+t)
+            self.solutions = batch
+            # Lưu cache
+            self.save_solution_to_pickle()
 
-            model.addConstr(objective <= self.length - 15, "UpperBound") # Ràng buộc <= 5850 (-15 TỀ ĐẦU)
-            model.addConstr(objective >= self.length * (1 - 0.015), "LowerBound") # >= 5850*(1-0.01)
-
-            model.setObjective(objective, GRB.MAXIMIZE) # Chạy tối ưu
-
-            nghiem_thu_n = 1
-            while True:
-                model.optimize()    # Giải optimize model
-
-                nghiem_thu_n +=1 
-                if nghiem_thu_n >= 1000:    # Ràng buộc nhỏ hơn 1000 nghiệm
-                    break
-
-                if model.status == GRB.OPTIMAL:
-                    # Lưu nghiệm hiện tại
-                    solution = [int(var.x) for var in variables] # Lấy value của từng biến xi đã giải đc
-                    obj_value = objective.getValue()
-                    self.solutions.append((obj_value, solution))    # lưu vào ma trận solutions
-
-                    model.addConstr(
-                        gp.quicksum((variables[i] - solution[i]) * (variables[i] - solution[i]) for i in range(len(variables))) >= 1,
-                        name=f"ExcludeSolution_{len(self.solutions)}"
-                    )   # sum from 1 to 4 (xi - xio)^2 >= 1, loại bỏ nghiệm vừa tìm được
-
-                    print(f"{solution}, Hao hụt {self.length-obj_value}/cây<br>")  # in nghiệm trong quá trình tìm được
-                else:
-                    break
-                
-
-            self.save_solution_to_model()
-
-        self.solution_matrix = np.array([sol[1] for sol in self.solutions])
+        self.solution_matrix = np.array([sol[1] for sol in self.solutions], dtype=int)
         print("------------------------------------------------<br>")
         print(f"THỰC TẾ LOAD {len(self.solution_matrix)} NGHIỆM<br>")
         print("------------------------------------------------<br>")
-
-        # print("<br>Tất cả các nghiệm tìm được:<br>")
-        # for obj_value, sol in self.solutions:
-        #     print(f"Nghiệm: {sol}, f(x) = {obj_value}, Minimized length - objective = {self.length - obj_value}<br>")
-
         return self.solutions
 
+    # -----------------------------
+    # Giai đoạn 2: Phân phối số bó (CP-SAT)
+    # -----------------------------
     def optimize_distribution(self):
         if self.solution_matrix is None:
             raise ValueError("Run optimize_cutting first to generate solution matrix.")
 
-        A = self.solution_matrix.T  # Ma trận nghiệm transpose
-        L = np.array([self.length - sol[0] for sol in self.solutions])  # Loss vector
+        A = self.solution_matrix.T               # m x n
+        L = np.array([self.length - sol[0] for sol in self.solutions], dtype=int)
 
         m, n = A.shape
-        k = 30  # Ma trận số bó sắt
+        k = 30  # số cột bó sắt
 
-        model = gp.Model("Matrix Optimization")
-        # model.setParam('TimeLimit', 60)  # Stop after 60 seconds
-        model.setParam('MIPGap', 0.025)  # Stop when relative gap is below 2.5%
+        model = cp_model.CpModel()
 
-        x = model.addVars(n, k, vtype=GRB.INTEGER, name="x")    # Biến quyết định: x_ij
-        # Biến nhị phân z_ijr để chọn giá trị của x_ij từ factors
-        z = model.addVars(n, k, len(self.factors), vtype=GRB.BINARY, name="z")
+        R = len(self.factors)
+        z = [[[model.NewBoolVar(f"z_{i}_{j}_{r}") for r in range(R)] for j in range(k)] for i in range(n)]
+        max_factor = max(self.factors)
+        x = [[model.NewIntVar(0, max_factor, f"x_{i}_{j}") for j in range(k)] for i in range(n)]
 
-        # Ràng buộc: x_ij phải bằng một giá trị trong danh sách factors
         for i in range(n):
             for j in range(k):
-                model.addConstr(x[i, j] == gp.quicksum(z[i, j, r] * self.factors[r] for r in range(len(self.factors))),
-                                name=f"x_constraint_{i}_{j}")
-                model.addConstr(gp.quicksum(z[i, j, r] for r in range(len(self.factors))) == 1,
-                                name=f"z_one_hot_{i}_{j}")
+                model.Add(sum(z[i][j][r] for r in range(R)) == 1)
+                model.Add(x[i][j] == sum(self.factors[r] * z[i][j][r] for r in range(R)))
 
-        # Giới hạn số lượng cắt tay
         index_of_one = self.factors.index(1)
-        total_ones = gp.quicksum(z[i, j, index_of_one] for i in range(n) for j in range(k))
-        model.addConstr(total_ones <= self.max_manual_cuts, name="limit_ones")
+        model.Add(
+            sum(z[i][j][index_of_one] for i in range(n) for j in range(k)) <= self.max_manual_cuts
+        )
 
-        # Ràng buộc: 0 <= C - B <= 10
-        C = model.addVars(m, vtype=GRB.INTEGER, name="C")   # Số lượng đoạn thực tế mỗi loại
-        for i in range(m):
-            # Tổng các hàng của ma trận A*x
-            model.addConstr(C[i] == gp.quicksum(A[i, j] * x[j, col] for j in range(n) for col in range(k)),
-                            name=f"C_calc_{i}")
-            model.addConstr(C[i] - self.demands[i] >= 0, name=f"C_B_lower_{i}")
-            model.addConstr(C[i] - self.demands[i] <= self.max_stock_over, name=f"C_B_upper_{i}")
+        C = [model.NewIntVar(0, 10**9, f"C_{i}") for i in range(A.shape[0])]
+        for i_row in range(A.shape[0]):
+            expr = []
+            for j_col in range(n):
+                coeff = int(A[i_row, j_col])
+                if coeff != 0:
+                    for col in range(k):
+                        expr.append(coeff * x[j_col][col])
+            model.Add(C[i_row] == (sum(expr) if expr else 0))
+            model.Add(C[i_row] - int(self.demands[i_row]) >= 0)
+            model.Add(C[i_row] - int(self.demands[i_row]) <= int(self.max_stock_over))
 
-        # Tối ưu hóa số lượng biến bằng 0 trong ma trận x
-        # Hàm mục tiêu thứ hai: Số lượng biến bằng 0 trong ma trận x
-        zero_vars = model.addVars(n, k, vtype=GRB.BINARY, name="zero_vars")
+        Loss_terms = []
+        for j_col in range(n):
+            if int(L[j_col]) != 0:
+                Loss_terms.append(int(L[j_col]) * sum(x[j_col][col] for col in range(k)))
+        Loss_expr = sum(Loss_terms) if Loss_terms else 0
 
-        M = 1e6  # Big-M, giá trị đủ lớn
-        epsilon = 1e-6  # Giá trị nhỏ để đảm bảo x[i, j] > 0
-        # Thêm ràng buộc để xác định zero_vars
-        for i in range(n):
-            for j in range(k):
-                # Ràng buộc 1: x[i, j] <= M * (1 - zero_vars[i, j])
-                # Nếu (x[i, j] == 0) -> (zero_vars[i, j] == 1)
-                model.addConstr(x[i, j] <= M * (1 - zero_vars[i, j]), name=f"bigM_zero_var_1_{i}_{j}")
+        index_of_zero = self.factors.index(0)
+        num_zeros_expr = sum(z[i][j][index_of_zero] for i in range(n) for j in range(k))
 
-                # Ràng buộc 2: x[i, j] >= epsilon - M * zero_vars[i, j]
-                # Nếu (x[i, j] > 0) -> (zero_vars[i, j] == 0)
-                model.addConstr(x[i, j] >= epsilon - M * zero_vars[i, j], name=f"bigM_zero_var_2_{i}_{j}")
+        W1 = 10**6
+        W2 = 1
+        model.Minimize(Loss_expr * W1 - num_zeros_expr * W2)
 
-        # Hàm mục tiêu thứ nhất: Loss
-        Loss = gp.quicksum(L[i] * x[i, j] for i in range(n) for j in range(k))
-        # Hàm mục tiêu thứ hai: Tối đa hóa số lượng biến bằng 0
-        num_zeros = gp.quicksum(zero_vars[i, j] for i in range(n) for j in range(k))
+        solver = cp_model.CpSolver()
+        solver.parameters.log_search_progress = False
+        solver.parameters.max_time_in_seconds = 30.0
+        solver.parameters.num_search_workers = 8
 
-        # Sử dụng phương pháp mục tiêu đa mục tiêu
-        model.setObjectiveN(Loss, index=0, priority=2, name="Minimize_Loss")
-        model.setObjectiveN(num_zeros, index=1, priority=1, name="Maximize_Zeros")
+        status = solver.Solve(model)
 
-        model.optimize()
+        print("!CLEAR!")  # XÓA LOG TRƯỚC KHI IN KẾT QUẢ
 
-        print("!CLEAR!")    # XÓA HẾT LOG TRƯỚC KHI PRINT KẾT QUẢ
-
-        if model.status == GRB.OPTIMAL:
-            x_optimal = np.array([[x[i, j].X for j in range(k)] for i in range(n)])
-
-            print("Kích thước đoạn (mm): ")
-            print(f"{self.segment_sizes}<br>")
-            # Duyệt qua từng hàng
-            tong_lan_cat = 0
-            tong_cat_tay = 0
-            for row_index, row in enumerate(x_optimal):
-                non_zero_elements = row[row != 0]  # Lấy các phần tử khác 0
-                if non_zero_elements.size > 0:
-                    # Đếm số lượng mỗi loại số
-                    counts = Counter(non_zero_elements)
-                    print("Chọn: ",A[:,row_index], " Hao hụt: ", str(L[row_index])+" mm/cây<br>")
-
-                    for num, count in counts.items():
-                        print(f"\t{num} cây/bó: {count} lần<br>")
-                        if num == 1:
-                            tong_cat_tay += count
-                        tong_lan_cat += count
-            
-            tong_sat = sum(sum(x_optimal))
-            print("____<br>")
-            print("Yêu cầu: <br>")
-            print(f"{self.demands}<br>")
-            print("Đã cắt được: <br>")
-            print(f"{np.array([C[i].X for i in C])}<br>")    # {0: <gurobi.Var C[0] (value 788.0)>, 1: <gurobi.Var C[1] (value 1580.0)>, 2: <gurobi.Var C[2] (value 1508.0)>, 3: <gurobi.Var C[3] (value 1508.0)<br>>}
-            print("____<br>")
-            print(f"Tổng lần cắt: {tong_lan_cat}<br>")
-            print("Trong đó: cắt máy: ", tong_sat-tong_cat_tay," cây, "," cắt tay: ", tong_cat_tay, " cây<br>")
-            time_estimate = tong_cat_tay * 5 + (tong_lan_cat-tong_cat_tay) * 4 # cắt tay * x + cắt máy * y
-            print("Thời gian ước tính: ", time_estimate // 60," giờ ",time_estimate % 60," phút<br>")
-            print("____<br>")
-            print("Tổng cây sắt cần: ", tong_sat, " cây<br>")
-            print("Cắt được: ",(self.length * tong_sat - Loss.getValue())/1000,"m<br>")
-            print("Hao hụt: ", Loss.getValue()/1000,"m<br>")
-            print(f"Hao hụt: {(Loss.getValue() / (self.length * tong_sat))*100:.2f}%<br>")
-            return x_optimal
-        else:
-            # print("ĐÃ STOP TIẾN TRÌNH!")
+        if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             print("Dui lòng tăng số đoạn cắt thủ công hoặc số tồn kho chứ VÔ NGHIỆM rùi!!!!")
             raise ValueError("No optimal solution found.")
+
+        x_optimal = np.array([[solver.Value(x[i][j]) for j in range(k)] for i in range(n)])
+
+        print("Kích thước đoạn (mm): ")
+        print(f"{self.segment_sizes}<br>")
+
+        tong_lan_cat = 0
+        tong_cat_tay = 0
+
+        for row_index in range(n):
+            row = x_optimal[row_index, :]
+            non_zero = row[row != 0]
+            if non_zero.size > 0:
+                counts = Counter(non_zero)
+                print("Chọn: ", A[:, row_index], " Hao hụt: ", str(L[row_index]) + " mm/cây<br>")
+                for num, count in counts.items():
+                    print(f"\t{num} cây/bó: {count} lần<br>")
+                    if num == 1:
+                        tong_cat_tay += count
+                    tong_lan_cat += count
+
+        tong_sat = int(x_optimal.sum())
+        C_vals = np.array([solver.Value(C[i]) for i in range(m)])
+
+        print("____<br>")
+        print("Yêu cầu: <br>")
+        print(f"{self.demands}<br>")
+        print("Đã cắt được: <br>")
+        print(f"{C_vals}<br>")
+        print("____<br>")
+        print(f"Tổng lần cắt: {tong_lan_cat}<br>")
+        print("Trong đó: cắt máy: ", tong_sat - tong_cat_tay, " cây, ", " cắt tay: ", tong_cat_tay, " cây<br>")
+
+        time_estimate = tong_cat_tay * 5 + (tong_lan_cat - tong_cat_tay) * 4
+        print("Thời gian ước tính: ", time_estimate // 60, " giờ ", time_estimate % 60, " phút<br>")
+        print("____<br>")
+        print("Tổng cây sắt cần: ", tong_sat, " cây<br>")
+
+        Loss_value = 0
+        for j_col in range(n):
+            count_j = sum(solver.Value(x[j_col][col]) for col in range(k))
+            Loss_value += int(L[j_col]) * count_j
+
+        print("Cắt được: ", (self.length * tong_sat - Loss_value) / 1000, "m<br>")
+        print("Hao hụt: ", Loss_value / 1000, "m<br>")
+        if self.length * tong_sat > 0:
+            print(f"Hao hụt: {(Loss_value / (self.length * tong_sat)) * 100:.2f}%<br>")
+
+        return x_optimal
