@@ -2,171 +2,212 @@
 
 {% block content %}
 <div class="row">
-    <!-- Logs bên trái -->
     <div class="col-md-6">
         <h2 class="text-primary" style="margin-top: 0;">Máy cắt tự động</h2>
         <form id="optimizationForm" method="post" novalidate>
             {% csrf_token %}
-            {{ form.as_p }}
-            <div class="button-container">
-                <button id="start-process" type="submit" class="btn btn-primary button-start-stop btn-optimize">Tìm
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.length.label_tag }}
+                        {{ form.length }}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.te_dau_sat.label_tag }}
+                        {{ form.te_dau_sat }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.blade_width.label_tag }}
+                        {{ form.blade_width }}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.factors.label_tag }}
+                        {{ form.factors }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        {{ form.time_limit_minutes.label_tag }}
+                        {{ form.time_limit_minutes }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        {{ form.max_manual_cuts.label_tag }}
+                        {{ form.max_manual_cuts }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        {{ form.max_stock_over.label_tag }}
+                        {{ form.max_stock_over }}
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="mt-3">Chi tiết các đoạn cắt:</h4>
+            <div id="handsontable-container" class="border rounded"></div>
+
+            <div class="button-container mt-3">
+                <button id="start-process" type="submit" class="btn btn-primary">Tìm
                     phương án cắt sắt</button>
-                <br>
-                <button id="stop-process" type="button" class="btn btn-danger button-start-stop btn-stop"
-                    onclick="stopServer()" style="display: none;">Dừng tìm phương án</button>
             </div>
         </form>
-
     </div>
 
-    <!-- Logs bên phải -->
     <div class="col-md-6 d-flex flex-column">
         <div class="d-flex justify-content-between align-items-center">
-            <h2 class="text-secondary">Kết quả</h2>
+            <div class="d-flex align-items-center">
+                <h2 class="text-secondary mb-0">Kết quả</h2>
+                <div id="status-display" class="text-primary fw-bold ms-3"></div>
+            </div>
             <button id="print-log" class="btn btn-light border" onclick="printDiv()">In kết quả</button>
         </div>
-        <div id="logs" class="border rounded p-3 bg-light"></div>
+        <div id="logs" class="border rounded p-3 bg-light"
+            style="flex-grow: 1; overflow-y: auto; white-space: pre-wrap; font-family: monospace;"></div>
     </div>
 </div>
 
 
 <script>
-    console.log("cat satttt")
     const form = document.getElementById('optimizationForm');
     const logOutput = document.getElementById('logs');
-    const stopButton = document.getElementById("stop-process");
     const startButton = document.getElementById("start-process");
+    const statusDisplay = document.getElementById("status-display");
+    const container = document.getElementById('handsontable-container');
 
+    // --- LƯU & KHÔI PHỤC TRẠNG THÁI FORM ---
+    form.addEventListener('input', (event) => {
+        if (event.target.name) {
+            localStorage.setItem(event.target.name, event.target.value);
+        }
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+        Array.from(form.elements).forEach((element) => {
+            if (element.name && localStorage.getItem(element.name)) {
+                element.value = localStorage.getItem(element.name);
+            }
+        });
+    });
 
-    // Tạo kết nối WebSocket
-    const appName = "{{ request.resolver_match.namespace }}";  // Lấy tên app từ Django
+    // --- TÍCH HỢP HANDSONTABLE ---
+    let tableData = JSON.parse(localStorage.getItem('handsontable_data_cat_sat')); // Dùng key khác
+    if (!tableData) {
+        tableData = [
+            ['Sắt A', 500, 782],
+            ['Sắt B', 255, 1564],
+            ['Sắt C', 600, 1508],
+            ['Sắt D', 615, 1508]
+        ];
+    }
+
+    const hot = new Handsontable(container, {
+        data: tableData,
+        colHeaders: ['Tên sắt', 'Kích thước (mm)', 'SL Cần'], // Thêm cột Tên sắt
+        columns: [
+            { type: 'text' },        // Cột Tên sắt
+            { type: 'numeric' },     // Cột Kích thước
+            { type: 'numeric' }      // Cột SL Cần
+        ],
+        rowHeaders: true, width: '100%', height: 350,
+        licenseKey: 'non-commercial-and-evaluation',
+        minSpareRows: 1, contextMenu: true, stretchH: 'all',
+        afterChange: (changes, source) => {
+            if (source !== 'loadData') {
+                localStorage.setItem('handsontable_data_cat_sat', JSON.stringify(hot.getData()));
+            }
+        }
+    });
+
+    // --- WEBSOCKET & SUBMIT LOGIC ---
+    const appName = "{{ request.resolver_match.namespace }}";
     const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const socket = new WebSocket(
-        wsProtocol + window.location.host + `/ws/${appName}/log/`
-    );
+    const socket = new WebSocket(wsProtocol + window.location.host + `/ws/${appName}/log/`);
 
-    socket.onopen = function () {
-        console.log("WebSocket connection established.");
-    };
+    socket.onopen = () => { logOutput.innerHTML = ""; console.log("WebSocket connected."); }
+    socket.onclose = () => console.log("WebSocket disconnected.");
+    socket.onerror = (error) => console.error("WebSocket error: ", error);
 
-    // Nhận log từ WebSocket và hiển thị
-    socket.onmessage = function (event) {
+    socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        message = data["message"];
-        if (message == "!CLEAR!") {
-            logOutput.innerHTML = "";// Append log
+        const message = data.message;
+        if (message.startsWith("TIMER_UPDATE::")) {
+            const parts = message.split('::');
+            const elapsed = parts[1];
+            const total = parts[2];
+            statusDisplay.innerText = `-> Thời gian: ${elapsed}s / ${total}s`;
+        } else if (message === "!CLEAR!") {
+            logOutput.innerHTML = "";
+        } else {
+            logOutput.insertAdjacentHTML('beforeend', message); // Sửa thành insertAdjacentHTML
         }
-        else if (message == "!XONGBUOC1!") {
-            stopButton.style.display = "inline-block"; // Hiển thị nút sau khi tìm nghiệm hết các cây sắt
-        }
-        else { logOutput.innerHTML += message; }
         logOutput.scrollTop = logOutput.scrollHeight;
     };
 
-    socket.onclose = function () {
-        console.log("WebSocket connection closed.");
-    };
-
-    socket.onerror = function (error) {
-        console.error("WebSocket error: ", error);
-    };
-
-    // Lưu dữ liệu form vào localStorage mỗi khi có thay đổi
-    form.addEventListener('input', function () {
-        const formData = new FormData(form);
-
-        formData.forEach((value, key) => {
-            localStorage.setItem(key, value);
-        });
-    });
-
-    // Khi trang được tải lại, khôi phục dữ liệu từ localStorage
-    window.addEventListener('DOMContentLoaded', () => {
-        const formData = new FormData(form);
-
-        formData.forEach((value, key) => {
-            const savedValue = localStorage.getItem(key);
-            if (savedValue !== null) {
-                const field = form.querySelector(`[name="${key}"]`);
-                if (field) {
-                    field.value = savedValue;
-                }
-            }
-        });
-    });
-
-    form.addEventListener("keydown", function (event) {  // Xử lí trường hợp Kki nhấn nút Enter
-        if (event.key === "Enter") {
-            event.preventDefault(); // Ngăn không cho form tự động submit
-
-            // Kiểm tra nút nào đang hiển thị
-            if (startButton.style.display !== "none") {
-                startButton.click(); // Kích hoạt nút "Tối ưu hóa"
-            } else if (stopButton.style.display !== "none") {
-                stopButton.click(); // Kích hoạt nút "Dừng giải"
-            }
-        }
-    });
-
-    let formDataGlobal = {}; // Biến toàn cục để lưu dữ liệu form
-
+    // --- SỬA LOGIC SUBMIT ---
     form.addEventListener('submit', function (e) {
-        console.log("nhấn nút Tối ưu hóa")
-        startButton.style.display = "none";
         e.preventDefault();
-
-        logOutput.innerHTML = ""
-
-        formDataGlobal = {
-            length: form.length.value,
+        startButton.disabled = true;
+        statusDisplay.innerText = "Đang xử lý...";
+        
+        const pieces_data = hot.getData().filter(row => row.some(cell => cell !== null && cell !== '' && cell !== undefined));
+        
+        const payload = {
+            length: parseInt(form.length.value),
             te_dau_sat: parseInt(form.te_dau_sat.value),
-            segment_sizes: form.segment_sizes.value.split(/[\s,]+/).filter(Boolean).map(Number),
-            demands: form.demands.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
             blade_width: parseFloat(form.blade_width.value),
-            factors: form.factors.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
+            factors: form.factors.value, 
+            time_limit_minutes: parseInt(form.time_limit_minutes.value),
             max_manual_cuts: parseInt(form.max_manual_cuts.value),
-            max_stock_over: parseInt(form.max_stock_over.value)
+            max_stock_over: parseInt(form.max_stock_over.value),
+            pieces_data: pieces_data 
         };
 
-        fetch("{% url 'cat_sat:optimize' %}", {
+        fetch("{% url 'cat_sat:optimize' %}", { 
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify(formDataGlobal),
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify(payload),
         })
-            .then(response => response.json())
-            .then(data => {
-                // console.log(data);
-                // if (data.status == "success"){
-                //     stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
-                // }
-                stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
-                startButton.style.display = "inline-block";
-            })
-            .catch(error => {
-                stopButton.style.display = "none";  // Ẩn nút dừng nếu có lỗi
-                startButton.style.display = "inline-block";
-
-            });
+        .catch(error => {
+            console.error(error);
+            statusDisplay.innerText = "Đã xảy ra lỗi!";
+            logOutput.innerHTML += "Đã xảy ra lỗi khi gửi yêu cầu: " + error;
+        })
+        .finally(() => {
+            startButton.disabled = false;
+            statusDisplay.innerText = "";
+        });
     });
 
-    function stopServer() {
-        stopButton.style.display = "none";  // Ẩn nút dừng ngay khi bấm nút
-
-        fetch('http://127.0.0.1:8383/trigger-stop', {
-            method: 'GET'
-        })
-            .then(response => response.text())
-            .then(data => console.log(data))
-            .catch(error => console.log('Error:', error));
-    }
-
+    // --- HÀM IN ---
     function printDiv() {
-        let divContents = document.getElementById("logs").innerText; // Lấy nội dung dạng text để giữ nguyên khoảng trắng
-        let screenWidth = window.screen.width;   // Lấy chiều rộng màn hình
-        let screenHeight = window.screen.height; // Lấy chiều cao màn hình
+        let divContents = document.getElementById("logs").innerHTML; 
+        
+        const formDataPrint = {
+             length: form.length.value,
+             te_dau_sat: form.te_dau_sat.value,
+             blade_width: form.blade_width.value
+        };
+        const segment_sizes = hot.getData()
+                                 .map(row => row[1]) 
+                                 .filter(val => val !== null && val !== '')
+                                 .join(' ');
+
+        let screenWidth = window.screen.width;
+        let screenHeight = window.screen.height;
 
         let printWindow = window.open('', '', `width=${screenWidth}, height=${screenHeight}, top=0, left=0`);
         printWindow.document.open();
@@ -177,18 +218,31 @@
         <style>
             body { font-family: Arial, sans-serif; }
             h2 { color: #333; margin-bottom: 10px; }
-            pre { white-space: pre-wrap; font-size: 16px; word-wrap: break-word; line-height: 1.8; }
+            table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                font-size: 0.8rem; 
+                table-layout: fixed; 
+            }
+            th, td { 
+                border: 1px solid #ccc; 
+                padding: 5px; 
+                text-align: center; 
+                vertical-align: middle;
+                word-wrap: break-word; 
+            }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            hr, h4, b { page-break-after: avoid; }
         </style>
     </head>
     <body>
-        <h2>Sắt ${formDataGlobal.length}mm || Cắt ${formDataGlobal.segment_sizes} đoạn || Lưỡi ${formDataGlobal.blade_width}mm || Tề đầu sắt ${formDataGlobal.te_dau_sat}mm</h2>
-        <pre>${divContents}</pre>
+        <h2>MCTĐ: Sắt ${formDataPrint.length}mm || Cắt ${segment_sizes} đoạn || Lưỡi ${formDataPrint.blade_width}mm || Tề đầu sắt ${formDataPrint.te_dau_sat}mm</h2>
+        ${divContents}
     </body>
     </html>
 `);
         printWindow.document.close();
         printWindow.print();
     }
-
 </script>
 {% endblock %}
