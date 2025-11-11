@@ -1,3 +1,4 @@
+# d:\IEA\cat_sat_iea\cat_sat\forms.py
 from django import forms
 
 class OptimizationForm(forms.Form):
@@ -8,14 +9,8 @@ class OptimizationForm(forms.Form):
         choices=LENGTH_CHOICES,
         label="Chiều dài thanh sắt (mm)",
         initial=5850,
-        # widget=forms.Select(attrs={'class': 'form-control'})
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
-
-    # # Thêm HTML cho datalist vào form
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.fields['length'].widget.attrs['datalist'] = 'length-options'
 
     te_dau_sat = forms.IntegerField(
         label="Tề đầu sắt (mm)",
@@ -23,17 +18,10 @@ class OptimizationForm(forms.Form):
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
 
-    segment_sizes = forms.CharField(
-        label="Kích thước đoạn (mm)",
-        initial="500 255 600 615",
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-
-    demands = forms.CharField(
-        label="Số lượng cần (đoạn)",
-        initial="782 1564 1508 1508",
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
+    # === XÓA 2 TRƯỜNG NÀY ===
+    # segment_sizes = forms.CharField(...)
+    # demands = forms.CharField(...)
+    # ========================
 
     blade_width = forms.ChoiceField(
         choices=BLADE_WIDTH_CHOICES,
@@ -44,13 +32,12 @@ class OptimizationForm(forms.Form):
 
     factors = forms.CharField(
         label="Cây/bó",
-        initial="14.16.18.20",
+        initial="14 16 18 20",
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
-        # --- THÊM MỚI ---
     time_limit_minutes = forms.IntegerField(
-        label="Thời gian chạy tối đa / bước (phút)",
+        label="Thời gian chạy tối đa (phút)",
         initial=2,
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
@@ -66,4 +53,3 @@ class OptimizationForm(forms.Form):
         initial=20,
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
-

@@ -300,7 +300,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
     # Giai đoạn 2: Phân phối số bó (CP-SAT gọn O(n·R))
     # -----------------------------
     def optimize_distribution(self):
-        print("<br>Bắt đầu GĐ 2: Phân phối bó (mô hình gọn O(n·R))...<br>")
+        print("<br>Bắt đầu GĐ 2: Đang tính toán bó sắt...<br>")
         if self.solution_matrix is None:
             raise ValueError("Run optimize_cutting first to generate solution matrix.")
 
