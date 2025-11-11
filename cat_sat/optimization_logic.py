@@ -4,9 +4,11 @@ import pickle
 import hashlib
 from pathlib import Path
 import numpy as np
+import pandas as pd  
 from collections import Counter
 import time
 import threading
+from datetime import datetime  # <-- Đã import
 
 # OR-Tools CP-SAT
 from ortools.sat.python import cp_model
@@ -47,6 +49,7 @@ class SteelCuttingOptimizer:
         self,
         length,
         te_dau_sat,
+        piece_names,         # <-- THÊM
         segment_sizes,
         demands,
         blade_width,
@@ -57,12 +60,13 @@ class SteelCuttingOptimizer:
     ):
         self.length = length
         self.te_dau_sat = te_dau_sat
+        self.piece_names = piece_names  # <-- THÊM
         self.segment_sizes = np.array(segment_sizes)
         self.demands = np.array(demands)
         self.blade_width = blade_width
         # đảm bảo factors có [1, 0] để khống chế cắt tay và “không chọn”
         # (GĐ2 sẽ tự lọc factor==0 để tránh biến vô nghĩa)
-        self.factors = sorted(factors, reverse=True) + [1, 0]
+        self.factors = sorted(list(set(factors)), reverse=True) + [1, 0] # Dùng set để loại trùng
         self.max_manual_cuts = max_manual_cuts
         self.max_stock_over = max_stock_over
         self.time_limit_seconds = time_limit_seconds
@@ -306,11 +310,11 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
         # A: m x n (m = số loại đoạn, n = số pattern)
         A = self.solution_matrix.T
-        L = np.array([self.length - sol[0] for sol in self.solutions], dtype=int)  # hao hụt / cây cho pattern j
+        L = np.array([self.length - sol[0] for sol in self.solutions], dtype=float)  # hao hụt / cây cho pattern j
         m, n = A.shape
 
         # Chỉ dùng các factor > 0 (0 nghĩa là không chọn)
-        pos_factors = [f for f in self.factors if f > 0]
+        pos_factors = sorted([f for f in self.factors if f > 0], reverse=True)
         idx_one = None
         if 1 in pos_factors:
             idx_one = pos_factors.index(1)
@@ -375,7 +379,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         bundle_terms = []
         for j in range(n):
             bj = bars_of_pattern(j)
-            loss_terms.append(int(L[j]) * bj)
+            # Scale hao hụt lên 1000 để tính toán số nguyên, tránh lỗi float
+            loss_terms.append(int(round(L[j] * 1000)) * bj) 
             for r in range(len(pos_factors)):
                 bundle_terms.append(b[j][r])
 
@@ -401,55 +406,155 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             print("Vô nghiệm / hết thời gian trong GĐ 2 — hãy tăng cắt tay hoặc tồn kho tối đa!")
             raise ValueError("Không tìm được nghiệm tối ưu (GĐ 2) trong thời gian giới hạn.")
 
-        # Thu kết quả (n x |pos_factors|): số bó theo từng pattern & factor
+        # =================================================================
+        # BẮT ĐẦU KHỐI OUTPUT MỚI (THEO PHONG CÁCH cat_laser_roi)
+        # =================================================================
+        
+        # <-- THÊM THỜI GIAN VÀ THÔNG TIN CƠ BẢN -->
+        now = datetime.now()
+        print(f"<b>Thời gian: {now.strftime('%d/%m/%Y %H:%M:%S')}</b><br>")
+        print(f"<b>Chiều dài cây sắt:</b> {self.length}mm, <b>Tề đầu:</b> {self.te_dau_sat}mm, <b>Lưỡi cắt:</b> {self.blade_width}mm<br>")
+        # <-- THÊM HỆ SỐ BÓ SẮT -->
+        print(f"<b>Hệ số bó (cây/bó):</b> {', '.join(map(str, pos_factors))}<br>")
+
+        
+        # 1. Tính toán các giá trị tổng hợp
+        C_vals = np.array([int(solver.Value(C[i])) for i in range(m)], dtype=int)
         b_opt = np.zeros((n, len(pos_factors)), dtype=int)
         for j in range(n):
             for r in range(len(pos_factors)):
                 b_opt[j, r] = int(solver.Value(b[j][r]))
-
-        # In báo cáo giống logic cũ
-        print("Kích thước đoạn (mm): ")
-        print(f"{self.segment_sizes}<br>")
-
-        tong_lan_cat = int(b_opt.sum())  # tổng số bó
+        
+        tong_lan_cat = int(b_opt.sum())
         tong_cat_tay = 0
         total_bars = 0
+        Loss_value = 0.0 # Hao hụt (mm)
+
+        if idx_one is not None:
+             tong_cat_tay = int(b_opt[:, idx_one].sum())
 
         for j in range(n):
-            counts = {pos_factors[r]: b_opt[j, r] for r in range(len(pos_factors)) if b_opt[j, r] > 0}
-            if counts:
-                print("Chọn: ", A[:, j], " Hao hụt: ", str(int(L[j])) + " mm/cây<br>")
-                for fr, cnt in counts.items():
-                    print(f"\t{fr} cây/bó: {cnt} lần<br>")
-                    total_bars += fr * cnt
-                    if fr == 1:
-                        tong_cat_tay += cnt
+            count_j = 0
+            for r, fr in enumerate(pos_factors):
+                 count_j += fr * b_opt[j, r]
+            total_bars += count_j
+            Loss_value += L[j] * count_j
 
-        C_vals = np.array([int(solver.Value(C[i])) for i in range(m)], dtype=int)
+        # 2. Tạo bảng tổng kết
+        print("<h4>TỔNG KẾT CẮT TỰ ĐỘNG</h4>")
+        summary = []
+        for i in range(m):
+            summary.append({
+                "Tên sắt": self.piece_names[i],
+                "Đoạn (mm)": self.segment_sizes[i],
+                "SL cần (đoạn)": self.demands[i],
+                "SL cắt (đoạn)": C_vals[i],
+                "Tồn kho (đoạn)": C_vals[i] - self.demands[i]
+            })
+        
+        summary_df = pd.DataFrame(summary)
+        summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
+        summary_styler.format({"Đoạn (mm)": lambda x: f"{x:.1f}" if x != int(x) else f"{int(x)}"})
+        print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
 
-        print("____<br>")
-        print("Yêu cầu: <br>")
-        print(f"{self.demands}<br>")
-        print("Đã cắt được: <br>")
-        print(f"{C_vals}<br>")
-        print("____<br>")
-        print(f"Tổng lần cắt (số bó): {tong_lan_cat}<br>")
-        print("Trong đó: cắt máy: ", total_bars - tong_cat_tay, " cây, ", " cắt tay: ", tong_cat_tay, " cây<br>")
-
-        time_estimate = tong_cat_tay * 5 + (tong_lan_cat - tong_cat_tay) * 4
-        print("Thời gian ước tính: ", time_estimate // 60, " giờ ", time_estimate % 60, " phút<br>")
-        print("____<br>")
-        print("Tổng cây sắt cần: ", total_bars, " cây<br>")
-
-        Loss_value = 0
-        for j in range(n):
-            count_j = sum(pos_factors[r] * b_opt[j, r] for r in range(len(pos_factors)))
-            Loss_value += int(L[j]) * count_j
-
-        print("Cắt được: ", (self.length * total_bars - Loss_value) / 1000, "m<br>")
-        print("Hao hụt: ", Loss_value / 1000, "m<br>")
+        # 3. In các thông số chung
+        print("<hr>")
+        print(f"<b>Tổng số cây sắt cần dùng:</b> {total_bars} cây<br>")
+        print(f"<b>Tổng hao hụt dài:</b> {Loss_value / 1000:,.2f}m<br>")
         if self.length * total_bars > 0:
-            print(f"Hao hụt: {(Loss_value / (self.length * total_bars)) * 100:.2f}%<br>")
+            print(f"<b>Hao hụt:</b> {(Loss_value / (self.length * total_bars)) * 100:.2f}%<br>")
+        
+        print(f"<b>Tổng lần cắt:</b> {tong_lan_cat}<br>")
+        print(f"<b>Cắt máy:</b> {total_bars - tong_cat_tay} cây, <b>Cắt tay:</b> {tong_cat_tay} cây<br>")
+
+        # 4. Tạo bảng kế hoạch chi tiết
+        plan_data = []
+        for j in range(n):
+            b_opt_row = b_opt[j, :]
+            if b_opt_row.sum() == 0:
+                continue # Bỏ qua pattern không dùng
+            
+            pattern_solution = self.solutions[j][1] # [x_i, ...]
+            pattern_waste = L[j]
+            
+            row = {}
+            row['Hao hụt (mm)'] = pattern_waste
+            for i in range(m):
+                row[f'segment_{i}'] = pattern_solution[i]
+            for r, fr in enumerate(pos_factors):
+                row[f'factor_{fr}'] = b_opt_row[r]
+            
+            plan_data.append(row)
+
+        if plan_data:
+            plan_df = pd.DataFrame(plan_data)
+            
+            # Đổi tên cột
+            custom_formatter_int = lambda x: f"{int(x)}" if x == int(x) else f"{x:.1f}"
+            rename_map = {f'segment_{i}': f'{self.piece_names[i]} <br>({custom_formatter_int(self.segment_sizes[i])}mm)' for i in range(m)}
+            factor_rename_map = {f'factor_{fr}': f'{fr} cây/bó' for fr in pos_factors}
+            
+            plan_df.rename(columns=rename_map, inplace=True)
+            plan_df.rename(columns=factor_rename_map, inplace=True)
+            
+            plan_df.insert(0, 'STT', np.arange(1, len(plan_df) + 1))
+            
+            # Sắp xếp cột
+            piece_cols = list(rename_map.values())
+            factor_cols = list(factor_rename_map.values())
+            other_cols = ['STT', 'Hao hụt (mm)']
+
+            # <-- LOGIC ẨN CỘT RỖNG -->
+            active_factor_cols = []
+            for col_name in factor_cols:
+                if plan_df[col_name].sum() > 0:
+                    active_factor_cols.append(col_name)
+            
+            # <-- SỬ DỤNG active_factor_cols THAY VÌ factor_cols -->
+            plan_df = plan_df[other_cols + piece_cols + active_factor_cols]
+
+            # Thay thế số 0 bằng chuỗi rỗng
+            for col in piece_cols + active_factor_cols: # <-- Dùng active_factor_cols
+                plan_df[col] = plan_df[col].apply(lambda x: '' if x == 0 else int(x))
+
+            print(f"<h4>KẾ HOẠCH CẮT CHI TIẾT ({len(plan_df)} loại)</h4>")
+            
+            plan_styler = plan_df.style.set_properties(**{'text-align': 'center'})
+            plan_styler.format({'Hao hụt (mm)': "{:,.1f}"})
+            plan_styler.set_properties(**{'font-weight': 'bold'}, subset=piece_cols + active_factor_cols) # <-- Dùng active_factor_cols
+            plan_styler.hide(axis="index")
+            
+            # Thêm viền đậm (giống cat_laser_roi)
+            table_styles = []
+            border_style = '2px solid black'
+            
+            if piece_cols:
+                first_col_idx = plan_df.columns.get_loc(piece_cols[0])
+                last_col_idx = plan_df.columns.get_loc(piece_cols[-1])
+                table_styles.extend([
+                    {'selector': f'th.col{first_col_idx}, td.col{first_col_idx}', 'props': [('border-left', border_style)]},
+                    {'selector': f'th.col{last_col_idx}, td.col{last_col_idx}', 'props': [('border-right', border_style)]},
+                    {'selector': ', '.join([f'th.col{plan_df.columns.get_loc(c)}' for c in piece_cols]), 'props': [('border-top', border_style)]},
+                    {'selector': ', '.join([f'tbody tr:last-child td.col{plan_df.columns.get_loc(c)}' for c in piece_cols]), 'props': [('border-bottom', border_style)]}
+                ])
+            
+            if active_factor_cols: # <-- Dùng active_factor_cols
+                first_col_idx = plan_df.columns.get_loc(active_factor_cols[0])
+                last_col_idx = plan_df.columns.get_loc(active_factor_cols[-1])
+                table_styles.extend([
+                    {'selector': f'th.col{first_col_idx}, td.col{first_col_idx}', 'props': [('border-left', border_style)]},
+                    {'selector': f'th.col{last_col_idx}, td.col{last_col_idx}', 'props': [('border-right', border_style)]},
+                    {'selector': ', '.join([f'th.col{plan_df.columns.get_loc(c)}' for c in active_factor_cols]), 'props': [('border-top', border_style)]},
+                    {'selector': ', '.join([f'tbody tr:last-child td.col{plan_df.columns.get_loc(c)}' for c in active_factor_cols]), 'props': [('border-bottom', border_style)]}
+                ])
+
+            plan_styler.set_table_styles(table_styles)
+            
+            print(plan_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
+
+        # =================================================================
+        # KẾT THÚC KHỐI OUTPUT MỚI
+        # =================================================================
 
         # Trả về ma trận (n x |pos_factors|) để views.py .tolist() gửi ra client
         return b_opt

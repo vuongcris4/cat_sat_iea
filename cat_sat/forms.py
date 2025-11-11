@@ -27,7 +27,7 @@ class OptimizationForm(forms.Form):
         choices=BLADE_WIDTH_CHOICES,
         label="Độ dày lưỡi cắt (mm)",
         initial=2.5,
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={'class': 'form-select'}) # <-- Sửa 'form-control' thành 'form-select'
     )
 
     factors = forms.CharField(

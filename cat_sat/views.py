@@ -46,16 +46,17 @@ def optimize(request):
                     print("❌ Không có dữ liệu đoạn cắt được cung cấp.<br>")
                     return JsonResponse({'status': 'error', 'message': 'Không có dữ liệu đoạn cắt.'}, status=400)
 
-                # Lọc các hàng rỗng từ handsontable
-                valid_pieces = [row for row in pieces_data if row and row[0] is not None and row[1] is not None]
+                # Lọc các hàng rỗng từ handsontable (hàng phải có cả 3 cột)
+                valid_pieces = [row for row in pieces_data if row and row[0] is not None and row[1] is not None and row[2] is not None]
                 
                 if not valid_pieces:
                     print("❌ Dữ liệu đoạn cắt rỗng.<br>")
                     return JsonResponse({'status': 'error', 'message': 'Dữ liệu đoạn cắt rỗng.'}, status=400)
 
-                # Tách dữ liệu từ bảng
-                segment_sizes = [float(item[0]) for item in valid_pieces]
-                demands = [int(item[1]) for item in valid_pieces]
+                # Tách dữ liệu từ bảng (3 cột)
+                piece_names = [str(item[0]) for item in valid_pieces]
+                segment_sizes = [float(item[1]) for item in valid_pieces]
+                demands = [int(item[2]) for item in valid_pieces]
 
                 # Lấy factors (dạng string) và chuyển thành list int
                 factors_str = data.get('factors', "")
@@ -67,6 +68,7 @@ def optimize(request):
                 optimizer = SteelCuttingOptimizer(
                     length=int(data['length']),
                     te_dau_sat=int(data['te_dau_sat']),
+                    piece_names=piece_names,       # Thêm Tên sắt
                     segment_sizes=segment_sizes, # Truyền list đã tách
                     demands=demands,           # Truyền list đã tách
                     blade_width=float(data['blade_width']),
@@ -99,4 +101,3 @@ def optimize(request):
             sys.stdout = sys.__stdout__ # <-- Sửa lại thành __stdout__
 
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
-   
