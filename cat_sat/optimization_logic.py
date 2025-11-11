@@ -6,13 +6,43 @@ from pathlib import Path
 import numpy as np
 from collections import Counter
 import time
+import threading  # <-- Đã có
 
 # OR-Tools CP-SAT
 from ortools.sat.python import cp_model
 
 
+# ===================================================================
+# Lớp Timer (Copy từ cat_laser_roi)
+# ===================================================================
+class SolverTimer(threading.Thread):
+    """Lớp đếm thời gian chạy cho bộ giải và gửi cập nhật ra frontend."""
+    def __init__(self, total_time):
+        super().__init__()
+        self.total_time = total_time
+        self.stop_event = threading.Event()
+        self.start_time = None
+        self.daemon = True
+
+    def run(self):
+        self.start_time = time.time()
+        while not self.stop_event.is_set():
+            elapsed = int(time.time() - self.start_time)
+            if elapsed > self.total_time:
+                break
+            # In ra thông điệp chuẩn để frontend bắt
+            print(f"TIMER_UPDATE::{elapsed}::{int(self.total_time)}")
+            time.sleep(1)
+
+    def stop(self):
+        self.stop_event.set()
+
+# ===================================================================
+# Lớp Tối Ưu Hóa
+# ===================================================================
 class SteelCuttingOptimizer:
-    def __init__(self, length, te_dau_sat, segment_sizes, demands, blade_width, factors, max_manual_cuts, max_stock_over):
+    # ... ( __init__ giữ nguyên, vẫn nhận time_limit_seconds ) ...
+    def __init__(self, length, te_dau_sat, segment_sizes, demands, blade_width, factors, max_manual_cuts, max_stock_over, time_limit_seconds=30.0): # <-- THÊM time_limit_seconds
         self.length = length
         self.te_dau_sat = te_dau_sat
         self.segment_sizes = np.array(segment_sizes)
@@ -22,6 +52,7 @@ class SteelCuttingOptimizer:
         self.factors = sorted(factors, reverse=True) + [1, 0]
         self.max_manual_cuts = max_manual_cuts
         self.max_stock_over = max_stock_over
+        self.time_limit_seconds = time_limit_seconds  # <-- THÊM MỚI
 
         self.solutions = []
         self.solution_matrix = None
@@ -30,10 +61,8 @@ class SteelCuttingOptimizer:
         self.BASE_DIR = Path(__file__).resolve().parents[1]  # .../cat_sat_iea
         self.CACHE_DIR = self.BASE_DIR / "pattern_cache"
         self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-    # -----------------------------
-    # Pickle cache helpers
-    # -----------------------------
+    
+    # ... (Các hàm cache _cache_key, _cache_path, save_solution_to_pickle, cut_list, load_solution_from_pickle giữ nguyên) ...
     def _cache_key(self):
         payload = {
             "length": int(self.length),
@@ -92,17 +121,11 @@ class SteelCuttingOptimizer:
         else:
             return list_solutions
 
-    # =========================================================
-    # GIAI ĐOẠN 1 MỚI: Thu thập nghiệm bằng SolutionCallback
-    # =========================================================
+# =========================================================
+# GIAI ĐOẠN 1 MỚI: Thu thập nghiệm bằng SolutionCallback
+# =========================================================
 class SolutionAndLogCollector(cp_model.CpSolverSolutionCallback):
-    """
-    Callback duyệt nghiệm thỏa mãn trong cửa sổ hao hụt.
-    - Lọc trùng bằng set
-    - Loại nghiệm đã có trong cache (exclude_set)
-    - Ghi log mỗi nghiệm bắt được
-    - Cắt theo accept_at_most và max_time_in_seconds (bên solver)
-    """
+    # ... (Giữ nguyên) ...
     def __init__(self, vars_x, seg_scaled, blade_scaled, scale, length, te_dau_sat,
                  exclude_set, accept_at_most=1000, print_every=1):
         super().__init__()
@@ -156,7 +179,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
     # -----------------------------
     # Batch tìm nghiệm dùng callback
     # -----------------------------
-    def _solve_single_bar_batch(self, max_solutions=1000, time_limit_sec=5.0):
+    def _solve_single_bar_batch(self, max_solutions=1000, time_limit_sec=None): # <-- Sửa: bỏ giá trị time_limit_sec
         """
         Tạo mô hình thỏa mãn với ràng buộc:
           - length*(1-0.01) <= sum(seg[i]*x_i) + blade_width * sum(x_i) <= length - te_dau_sat
@@ -164,6 +187,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         Dùng CpSolverSolutionCallback để duyệt nghiệm nhanh, lọc trùng bằng set.
         Trả về list[(obj_value_mm, [x_i,...])], đã sort theo obj_value giảm dần.
         """
+        # --- THÊM MỚI: Log ---
+        print(f"Bắt đầu GĐ 1: Tìm các pattern (tối đa {max_solutions:,} phương án). Vui lòng chờ...<br>")
         model = cp_model.CpModel()
 
         n = len(self.segment_sizes)
@@ -171,7 +196,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         sum_x = cp_model.LinearExpr.Sum(vars_x)
 
         # scale integer hóa
-        scale = 100
+        scale = 10
         seg_scaled = [int(round(s * scale)) for s in self.segment_sizes.tolist()]
         blade_scaled = int(round(self.blade_width * scale))
         length_scaled = int(round(self.length * scale))
@@ -183,16 +208,19 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
         # ràng buộc cửa sổ hao hụt (giữ như cũ, 1% hao hụt tối thiểu)
         lower = int(round(length_scaled * (1 - 0.01)))
-        upper = int(round(length_scaled - te_scaled))
+        upper = int(round(length_scaled))   # ---------------------- KHÔNG LẤY te_scaled nữa, B1 vẫn giải full, tới lúc load mới lấy từ tề đầu trở đi
         model.Add(objective_scaled >= lower)
         model.Add(objective_scaled <= upper)
 
         # Bật enumerate all solutions (bài toán thỏa mãn)
         solver = cp_model.CpSolver()
         solver.parameters.enumerate_all_solutions = True
-        solver.parameters.log_search_progress = False
-        solver.parameters.max_time_in_seconds = float(time_limit_sec)
-        solver.parameters.num_search_workers = 8
+        solver.parameters.log_search_progress = True
+        
+        # --- THAY ĐỔI: Bỏ time limit ---
+        # solver.parameters.max_time_in_seconds = float(self.time_limit_seconds) # <-- BỎ DÒNG NÀY
+        
+        solver.parameters.num_search_workers = 1
 
         # chuẩn bị exclude từ cache hiện có (nếu có)
         exclude_set = set()
@@ -207,13 +235,15 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             length=self.length,
             te_dau_sat=self.te_dau_sat,
             exclude_set=exclude_set,
-            accept_at_most=max_solutions,
-            print_every=1
+            accept_at_most=max_solutions, # <-- Sẽ được set là 100,000 từ optimize_cutting
+            print_every=100 # <-- In ít lại
         )
 
-        # chạy tìm tất cả nghiệm (giới hạn bởi time và solution_limit)
+        # chạy tìm tất cả nghiệm (giới hạn bởi solution_limit)
         solver.SearchForAllSolutions(model, collector)
 
+        # --- THÊM MỚI: Log ---
+        print(f"GĐ 1: Tìm thấy {len(collector.solutions)} patterns.<br>")
         return collector.solutions
 
     def optimize_cutting(self):
@@ -228,15 +258,17 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
         # Nếu cache chưa đủ, dùng batch callback để lấy nhanh nghiệm mới
         if not self.solutions:
-            MAX_SOLUTIONS = 1000
-            TIME_LIMIT_SEC = 5.0
+            # --- THAY ĐỔI: Giống cat_laser_roi ---
+            MAX_SOLUTIONS = 100000 
+            # TIME_LIMIT_SEC = 5.0 (Không dùng nữa)
 
             batch = self._solve_single_bar_batch(
                 max_solutions=MAX_SOLUTIONS,
-                time_limit_sec=TIME_LIMIT_SEC
+                time_limit_sec=None # <-- Không dùng nữa
             )
             if not batch:
-                raise ValueError("Không tìm được nghiệm phù hợp cho 1 cây sắt trong thời gian giới hạn.")
+                # <-- Lỗi này vẫn có thể xảy ra nếu không tìm thấy gì
+                raise ValueError("Không tìm được nghiệm phù hợp cho 1 cây sắt (GĐ 1).")
 
             self.solutions = batch
             # Lưu cache
@@ -252,6 +284,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
     # Giai đoạn 2: Phân phối số bó (CP-SAT)
     # -----------------------------
     def optimize_distribution(self):
+        # --- THÊM MỚI: Log ---
+        print("<br>Bắt đầu GĐ 2: Phân phối bó...<br>")
         if self.solution_matrix is None:
             raise ValueError("Run optimize_cutting first to generate solution matrix.")
 
@@ -305,7 +339,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
         solver = cp_model.CpSolver()
         solver.parameters.log_search_progress = False
-        solver.parameters.max_time_in_seconds = 30.0
+        # --- CHỖ NÀY ĐÃ ĐÚNG: GĐ 2 dùng time limit ---
+        solver.parameters.max_time_in_seconds = self.time_limit_seconds
         solver.parameters.num_search_workers = 8
 
         status = solver.Solve(model)
@@ -314,7 +349,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
         if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             print("Dui lòng tăng số đoạn cắt thủ công hoặc số tồn kho chứ VÔ NGHIỆM rùi!!!!")
-            raise ValueError("No optimal solution found.")
+            # --- Sửa thông báo lỗi ---
+            raise ValueError("Không tìm được nghiệm tối ưu (GĐ 2) trong thời gian giới hạn.")
 
         x_optimal = np.array([[solver.Value(x[i][j]) for j in range(k)] for i in range(n)])
 

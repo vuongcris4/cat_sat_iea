@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="row">
-    <!-- Logs bên trái -->
     <div class="col-md-6">
         <h2 class="text-primary" style="margin-top: 0;">Máy cắt tự động</h2>
         <form id="optimizationForm" method="post" novalidate>
@@ -12,20 +11,21 @@
                 <button id="start-process" type="submit" class="btn btn-primary button-start-stop btn-optimize">Tìm
                     phương án cắt sắt</button>
                 <br>
-                <button id="stop-process" type="button" class="btn btn-danger button-start-stop btn-stop"
-                    onclick="stopServer()" style="display: none;">Dừng tìm phương án</button>
-            </div>
+                </div>
         </form>
 
     </div>
 
-    <!-- Logs bên phải -->
     <div class="col-md-6 d-flex flex-column">
         <div class="d-flex justify-content-between align-items-center">
-            <h2 class="text-secondary">Kết quả</h2>
+            <div class="d-flex align-items-center">
+                <h2 class="text-secondary mb-0">Kết quả</h2>
+                <div id="status-display" class="text-primary fw-bold ms-3"></div>
+            </div>
             <button id="print-log" class="btn btn-light border" onclick="printDiv()">In kết quả</button>
         </div>
-        <div id="logs" class="border rounded p-3 bg-light"></div>
+        <div id="logs" class="border rounded p-3 bg-light"
+            style="flex-grow: 1; overflow-y: auto; white-space: pre-wrap; font-family: monospace;"></div>
     </div>
 </div>
 
@@ -34,8 +34,9 @@
     console.log("cat satttt")
     const form = document.getElementById('optimizationForm');
     const logOutput = document.getElementById('logs');
-    const stopButton = document.getElementById("stop-process");
+    // const stopButton = document.getElementById("stop-process"); // Bỏ
     const startButton = document.getElementById("start-process");
+    const statusDisplay = document.getElementById("status-display"); // Thêm mới
 
 
     // Tạo kết nối WebSocket
@@ -46,6 +47,7 @@
     );
 
     socket.onopen = function () {
+        logOutput.innerHTML = ""; // Xóa log cũ khi kết nối
         console.log("WebSocket connection established.");
     };
 
@@ -53,13 +55,25 @@
     socket.onmessage = function (event) {
         const data = JSON.parse(event.data);
         message = data["message"];
-        if (message == "!CLEAR!") {
+        
+        // --- THÊM LOGIC MỚI ---
+        if (message.startsWith("TIMER_UPDATE::")) {
+            const parts = message.split('::');
+            const elapsed = parts[1];
+            const total = parts[2];
+            statusDisplay.innerText = `-> Thời gian: ${elapsed}s / ${total}s`;
+        }
+        // --- SỬA LOGIC CŨ ---
+        else if (message == "!CLEAR!") {
             logOutput.innerHTML = "";// Append log
         }
-        else if (message == "!XONGBUOC1!") {
-            stopButton.style.display = "inline-block"; // Hiển thị nút sau khi tìm nghiệm hết các cây sắt
+        // --- BỎ LOGIC NÀY ---
+        // else if (message == "!XONGBUOC1!") {
+        //     stopButton.style.display = "inline-block"; // Hiển thị nút sau khi tìm nghiệm hết các cây sắt
+        // }
+        else { 
+            logOutput.innerHTML += message; 
         }
-        else { logOutput.innerHTML += message; }
         logOutput.scrollTop = logOutput.scrollHeight;
     };
 
@@ -98,13 +112,7 @@
     form.addEventListener("keydown", function (event) {  // Xử lí trường hợp Kki nhấn nút Enter
         if (event.key === "Enter") {
             event.preventDefault(); // Ngăn không cho form tự động submit
-
-            // Kiểm tra nút nào đang hiển thị
-            if (startButton.style.display !== "none") {
-                startButton.click(); // Kích hoạt nút "Tối ưu hóa"
-            } else if (stopButton.style.display !== "none") {
-                stopButton.click(); // Kích hoạt nút "Dừng giải"
-            }
+            startButton.click(); // Luôn kích hoạt nút start
         }
     });
 
@@ -112,7 +120,8 @@
 
     form.addEventListener('submit', function (e) {
         console.log("nhấn nút Tối ưu hóa")
-        startButton.style.display = "none";
+        startButton.disabled = true; // <-- Sửa: dùng disabled
+        statusDisplay.innerText = "Đang xử lý..."; // <-- Thêm mới
         e.preventDefault();
 
         logOutput.innerHTML = ""
@@ -125,7 +134,8 @@
             blade_width: parseFloat(form.blade_width.value),
             factors: form.factors.value.split(/[\s,\.]+/).filter(Boolean).map(Number),
             max_manual_cuts: parseInt(form.max_manual_cuts.value),
-            max_stock_over: parseInt(form.max_stock_over.value)
+            max_stock_over: parseInt(form.max_stock_over.value),
+            time_limit_minutes: parseInt(form.time_limit_minutes.value) // <-- Thêm mới
         };
 
         fetch("{% url 'cat_sat:optimize' %}", {
@@ -136,32 +146,19 @@
             },
             body: JSON.stringify(formDataGlobal),
         })
-            .then(response => response.json())
-            .then(data => {
-                // console.log(data);
-                // if (data.status == "success"){
-                //     stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
-                // }
-                stopButton.style.display = "none";  // Ẩn nút dừng sau khi quá trình hoàn tất
-                startButton.style.display = "inline-block";
-            })
             .catch(error => {
-                stopButton.style.display = "none";  // Ẩn nút dừng nếu có lỗi
-                startButton.style.display = "inline-block";
-
+                console.error(error);
+                statusDisplay.innerText = "Đã xảy ra lỗi!";
+                logOutput.innerHTML += "Đã xảy ra lỗi khi gửi yêu cầu: " + error;
+            })
+            .finally(() => {
+                startButton.disabled = false; // <-- Sửa: dùng disabled
+                statusDisplay.innerText = ""; // <-- Thêm mới
             });
     });
 
-    function stopServer() {
-        stopButton.style.display = "none";  // Ẩn nút dừng ngay khi bấm nút
-
-        fetch('http://127.0.0.1:8383/trigger-stop', {
-            method: 'GET'
-        })
-            .then(response => response.text())
-            .then(data => console.log(data))
-            .catch(error => console.log('Error:', error));
-    }
+    // --- BỎ FUNCTION NÀY ---
+    // function stopServer() { ... }
 
     function printDiv() {
         let divContents = document.getElementById("logs").innerText; // Lấy nội dung dạng text để giữ nguyên khoảng trắng

@@ -48,6 +48,13 @@ class OptimizationForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
+        # --- THÊM MỚI ---
+    time_limit_minutes = forms.IntegerField(
+        label="Thời gian chạy tối đa / bước (phút)",
+        initial=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+
     max_manual_cuts = forms.IntegerField(
         label="Số lần cắt thủ công tối đa (lần)",
         initial=5,
@@ -59,3 +66,4 @@ class OptimizationForm(forms.Form):
         initial=20,
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
+
