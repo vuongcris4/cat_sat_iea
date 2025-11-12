@@ -290,14 +290,24 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             if not batch:
                 raise ValueError("Không tìm được nghiệm phù hợp cho 1 cây sắt (GĐ 1).")
 
+            # <<< FIX YÊU CẦU 1: Lọc tề đầu cho batch mới giải >>>
+            print(f"GĐ 1: Tìm thấy {len(batch)} patterns. Đang lọc theo tề đầu sắt ({self.te_dau_sat}mm)...")
+            batch = self.cut_list(batch, self.te_dau_sat, self.length)
+            print(f"GĐ 1: Còn lại {len(batch)} patterns sau khi lọc tề đầu.<br>")
+            # <<< KẾT THÚC FIX >>>
+
             self.solutions = batch
-            # Lưu cache
+            # Lưu cache (đã lọc)
             self.save_solution_to_pickle()
 
         self.solution_matrix = np.array([sol[1] for sol in self.solutions], dtype=int)
         print("------------------------------------------------<br>")
         print(f"THỰC TẾ LOAD {len(self.solution_matrix)} NGHIỆM<br>")
         print("------------------------------------------------<br>")
+        
+        if len(self.solution_matrix) == 0:
+             raise ValueError(f"Không tìm được pattern nào phù hợp với chiều dài {self.length}mm và tề đầu {self.te_dau_sat}mm.")
+
         return self.solutions
 
     # -----------------------------
@@ -380,7 +390,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         for j in range(n):
             bj = bars_of_pattern(j)
             # Scale hao hụt lên 1000 để tính toán số nguyên, tránh lỗi float
-            loss_terms.append(int(round(L[j] * 1000)) * bj) 
+            loss_terms.append(int(round(L[j] * 1000)) * bj)  
             for r in range(len(pos_factors)):
                 bundle_terms.append(b[j][r])
 
@@ -431,12 +441,12 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         Loss_value = 0.0 # Hao hụt (mm)
 
         if idx_one is not None:
-             tong_cat_tay = int(b_opt[:, idx_one].sum())
+                tong_cat_tay = int(b_opt[:, idx_one].sum())
 
         for j in range(n):
             count_j = 0
             for r, fr in enumerate(pos_factors):
-                 count_j += fr * b_opt[j, r]
+                    count_j += fr * b_opt[j, r]
             total_bars += count_j
             Loss_value += L[j] * count_j
 
@@ -477,12 +487,21 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             pattern_solution = self.solutions[j][1] # [x_i, ...]
             pattern_waste = L[j]
             
+            # <<< FIX YÊU CẦU 2: TÍNH TỔNG SỐ CÂY SẮT CHO PATTERN NÀY >>>
+            total_bars_for_pattern = 0
+            for r, fr in enumerate(pos_factors):
+                total_bars_for_pattern += fr * b_opt_row[r]
+            # <<< KẾT THÚC TÍNH TOÁN >>>
+            
             row = {}
             row['Hao hụt (mm)'] = pattern_waste
             for i in range(m):
                 row[f'segment_{i}'] = pattern_solution[i]
             for r, fr in enumerate(pos_factors):
                 row[f'factor_{fr}'] = b_opt_row[r]
+            
+            # <<< FIX YÊU CẦU 2: THÊM VÀO DỮ LIỆU HÀNG >>>
+            row['Tổng cây'] = total_bars_for_pattern
             
             plan_data.append(row)
 
@@ -503,6 +522,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             piece_cols = list(rename_map.values())
             factor_cols = list(factor_rename_map.values())
             other_cols = ['STT', 'Hao hụt (mm)']
+            # <<< FIX YÊU CẦU 2: ĐỊNH NGHĨA TÊN CỘT TỔNG >>>
+            total_col_name = 'Tổng cây'
 
             # <-- LOGIC ẨN CỘT RỖNG -->
             active_factor_cols = []
@@ -511,17 +532,20 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
                     active_factor_cols.append(col_name)
             
             # <-- SỬ DỤNG active_factor_cols THAY VÌ factor_cols -->
-            plan_df = plan_df[other_cols + piece_cols + active_factor_cols]
+            # <<< FIX YÊU CẦU 2: THÊM CỘT TỔNG VÀO CUỐI >>>
+            plan_df = plan_df[other_cols + piece_cols + active_factor_cols + [total_col_name]]
 
             # Thay thế số 0 bằng chuỗi rỗng
-            for col in piece_cols + active_factor_cols: # <-- Dùng active_factor_cols
+            # <<< FIX YÊU CẦU 2: THÊM CỘT TỔNG VÀO DANH SÁCH >>>
+            for col in piece_cols + active_factor_cols + [total_col_name]: # <-- Dùng active_factor_cols
                 plan_df[col] = plan_df[col].apply(lambda x: '' if x == 0 else int(x))
 
             print(f"<h4>KẾ HOẠCH CẮT CHI TIẾT ({len(plan_df)} loại)</h4>")
             
             plan_styler = plan_df.style.set_properties(**{'text-align': 'center'})
             plan_styler.format({'Hao hụt (mm)': "{:,.1f}"})
-            plan_styler.set_properties(**{'font-weight': 'bold'}, subset=piece_cols + active_factor_cols) # <-- Dùng active_factor_cols
+            # <<< FIX YÊU CẦU 2: IN ĐẬM CỘT TỔNG >>>
+            plan_styler.set_properties(**{'font-weight': 'bold'}, subset=piece_cols + active_factor_cols + [total_col_name]) # <-- Dùng active_factor_cols
             plan_styler.hide(axis="index")
             
             # Thêm viền đậm (giống cat_laser_roi)
