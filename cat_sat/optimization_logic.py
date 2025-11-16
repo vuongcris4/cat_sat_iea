@@ -541,7 +541,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
             print(f"<h4>KẾ HOẠCH CẮT CHI TIẾT ({len(plan_df)} loại)</h4>")
             
-            plan_styler = plan_df.style.set_properties(**{'text-align': 'center'})
+            plan_styler = plan_df.style.set_properties(**{'text-align': 'center', 'font-size': '1.1rem'})
             plan_styler.format({'Hao hụt (mm)': "{:,.1f}"})
 
             plan_styler.set_properties(**{'font-weight': 'bold'}, subset=piece_cols + active_factor_cols + [total_col_name]) # <-- Dùng active_factor_cols
