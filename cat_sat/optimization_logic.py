@@ -307,7 +307,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         
         if len(self.solution_matrix) == 0:
              raise ValueError(f"Không tìm được pattern nào phù hợp với chiều dài {self.length}mm và tề đầu {self.te_dau_sat}mm.")
-
+        
         return self.solutions
 
     # -----------------------------
@@ -549,6 +549,10 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             
             # Thêm viền đậm (giống cat_laser_roi)
             table_styles = []
+            # --- THÊM: TĂNG FONT HEADER (TH) ---
+            table_styles.append(
+                {'selector': 'th', 'props': [('font-size', '1.1rem')]}
+            )
             border_style = '2px solid black'
             
             if piece_cols:
