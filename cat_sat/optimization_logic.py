@@ -509,7 +509,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             # Đổi tên cột
             custom_formatter_int = lambda x: f"{int(x)}" if x == int(x) else f"{x:.1f}"
             # rename_map = {f'segment_{i}': f'{self.piece_names[i]} <br>({custom_formatter_int(self.segment_sizes[i])}mm)' for i in range(m)}
-            rename_map = {f'segment_{i}': f'{custom_formatter_int(self.segment_sizes[i])}mm' for i in range(m)}
+            rename_map = {f'segment_{i}': f'{custom_formatter_int(self.segment_sizes[i])}' for i in range(m)}
             factor_rename_map = {f'factor_{fr}': f'{fr}<br>cây/bó' for fr in pos_factors}
             
             plan_df.rename(columns=rename_map, inplace=True)
