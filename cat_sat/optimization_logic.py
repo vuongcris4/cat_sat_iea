@@ -413,8 +413,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         print("!CLEAR!")  # Xóa log trước khi in kết quả
 
         if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-            print("Vô nghiệm / hết thời gian trong GĐ 2 — hãy tăng cắt tay hoặc tồn kho tối đa!")
-            raise ValueError("Không tìm được nghiệm tối ưu (GĐ 2) trong thời gian giới hạn.")
+            # print("Tăng cắt tay / Tồn kho / Thời gian")
+            raise ValueError("Tăng cắt tay / Tồn kho / Thời gian")
 
         # =================================================================
         # BẮT ĐẦU KHỐI OUTPUT MỚI (THEO PHONG CÁCH cat_laser_roi)
@@ -491,7 +491,6 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             total_bars_for_pattern = 0
             for r, fr in enumerate(pos_factors):
                 total_bars_for_pattern += fr * b_opt_row[r]
-            # <<< KẾT THÚC TÍNH TOÁN >>>
             
             row = {}
             row['Hao hụt (mm)'] = pattern_waste
@@ -500,7 +499,6 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             for r, fr in enumerate(pos_factors):
                 row[f'factor_{fr}'] = b_opt_row[r]
             
-            # <<< FIX YÊU CẦU 2: THÊM VÀO DỮ LIỆU HÀNG >>>
             row['Tổng cây'] = total_bars_for_pattern
             
             plan_data.append(row)
@@ -510,8 +508,9 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             
             # Đổi tên cột
             custom_formatter_int = lambda x: f"{int(x)}" if x == int(x) else f"{x:.1f}"
-            rename_map = {f'segment_{i}': f'{self.piece_names[i]} <br>({custom_formatter_int(self.segment_sizes[i])}mm)' for i in range(m)}
-            factor_rename_map = {f'factor_{fr}': f'{fr} cây/bó' for fr in pos_factors}
+            # rename_map = {f'segment_{i}': f'{self.piece_names[i]} <br>({custom_formatter_int(self.segment_sizes[i])}mm)' for i in range(m)}
+            rename_map = {f'segment_{i}': f'{custom_formatter_int(self.segment_sizes[i])}mm' for i in range(m)}
+            factor_rename_map = {f'factor_{fr}': f'{fr}<br>cây/bó' for fr in pos_factors}
             
             plan_df.rename(columns=rename_map, inplace=True)
             plan_df.rename(columns=factor_rename_map, inplace=True)
@@ -544,7 +543,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             
             plan_styler = plan_df.style.set_properties(**{'text-align': 'center'})
             plan_styler.format({'Hao hụt (mm)': "{:,.1f}"})
-            # <<< FIX YÊU CẦU 2: IN ĐẬM CỘT TỔNG >>>
+
             plan_styler.set_properties(**{'font-weight': 'bold'}, subset=piece_cols + active_factor_cols + [total_col_name]) # <-- Dùng active_factor_cols
             plan_styler.hide(axis="index")
             

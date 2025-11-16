@@ -8,6 +8,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import os
 import sys
+import traceback
 
 class TeeStream:
     def __init__(self, websocket_room):
@@ -95,9 +96,19 @@ def optimize(request):
                     timer.join()
         
         except Exception as e:
-            print(f"Đã xảy ra lỗi: {e}")
+            # Lấy chi tiết toàn bộ traceback_message
+            traceback_message = traceback.format_exc() 
+            
+            # In ra WebSocket (vì stdout đang bị TeeStream bắt)
+            print("!CLEAR!") # Xóa log cũ
+            print("❌ ĐÃ XẢY RA LỖI NGHIÊM TRỌNG (GĐ 2) ❌<br>")
+            print("<pre style='color:red; font-family: monospace;'>")
+            print(traceback_message)
+            print("</pre>")
+
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
+        
         finally:
-            sys.stdout = sys.__stdout__ # <-- Sửa lại thành __stdout__
+            sys.stdout = original_stdout # <-- Sửa lại thành __stdout__
 
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
