@@ -290,10 +290,18 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             if not batch:
                 raise ValueError("Không tìm được nghiệm phù hợp cho 1 cây sắt (GĐ 1).")
 
-            # <<< FIX YÊU CẦU 1: Lọc tề đầu cho batch mới giải >>>
-            print(f"GĐ 1: Tìm thấy {len(batch)} patterns. Đang lọc theo tề đầu sắt ({self.te_dau_sat}mm)...")
-            batch = self.cut_list(batch, self.te_dau_sat, self.length)
-            print(f"GĐ 1: Còn lại {len(batch)} patterns sau khi lọc tề đầu.<br>")
+            # === LỌC NGHIỆM CHỈ GIỮ LẠI PATTERN CÓ TỐI ĐA 5 KÍCH THƯỚC ===
+            if len(self.segment_sizes) > 5:
+                before_count = len(batch)
+                # Chỉ giữ lại các pattern mà số lượng loại đoạn cắt (x > 0) <= 5
+                batch = [
+                    (obj, sol) for obj, sol in batch
+                    if sum(1 for x in sol if x > 0) <= 5
+                ]
+                print(f"GĐ 1: Đã lọc bỏ pattern quá 5 loại kích thước: {before_count} -> {len(batch)} patterns.<br>")
+            # ===============================================================================
+
+            print(f"GĐ 1: Còn lại {len(batch)} patterns sau khi lọc.<br>")
             # <<< KẾT THÚC FIX >>>
 
             self.solutions = batch
