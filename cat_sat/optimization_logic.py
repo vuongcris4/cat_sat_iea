@@ -1,15 +1,15 @@
-import os
-import json
-import pickle
 import hashlib
-from pathlib import Path
-import numpy as np
-import pandas as pd  
-from collections import Counter
-import time
+import json
+import os
+import pickle
 import threading
+import time
+from collections import Counter
 from datetime import datetime  # <-- Đã import
+from pathlib import Path
 
+import numpy as np
+import pandas as pd
 # OR-Tools CP-SAT
 from ortools.sat.python import cp_model
 
@@ -270,6 +270,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         print(f"GĐ 1: Tìm thấy {len(collector.solutions)} patterns.<br>")
         return collector.solutions
 
+    # load nghiệm từ pickle và lọc lại theo điều kiện
     def optimize_cutting(self):
         # Ưu tiên dùng nghiệm cache (sau khi lọc theo tề đầu)
         self.solutions = self.load_solution_from_pickle()
@@ -290,6 +291,21 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             if not batch:
                 raise ValueError("Không tìm được nghiệm phù hợp cho 1 cây sắt (GĐ 1).")
 
+
+            # === LỌC NGHIỆM THEO TỀ ĐẦU SẮT (Hao hụt >= Tề đầu) ===
+            # Pattern hợp lệ phải có phần dư đủ để cắt tề đầu
+            before_te = len(batch)
+            batch = [
+                (obj, sol) for obj, sol in batch
+                if obj + self.te_dau_sat <= self.length + 1e-5
+            ]
+            if len(batch) < before_te:
+                print(f"GĐ 1: Đã lọc {before_te - len(batch)} patterns có hao hụt < tề đầu ({self.te_dau_sat}mm).<br>")
+
+            if not batch:
+                raise ValueError(f"Không có pattern nào thỏa mãn tề đầu {self.te_dau_sat}mm.")
+            
+
             # === LỌC NGHIỆM CHỈ GIỮ LẠI PATTERN CÓ TỐI ĐA 5 KÍCH THƯỚC ===
             if len(self.segment_sizes) > 5:
                 before_count = len(batch)
@@ -303,6 +319,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
             print(f"GĐ 1: Còn lại {len(batch)} patterns sau khi lọc.<br>")
             # <<< KẾT THÚC FIX >>>
+
 
             self.solutions = batch
             # Lưu cache (đã lọc)
