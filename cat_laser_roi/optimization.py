@@ -3,13 +3,13 @@ from ortools.sat.python import cp_model
 
 def find_efficient_cutting_patterns():
     """
-    Tìm các phương án cắt có hao hụt <= 1.5%, đã bao gồm lưỡi cắt.
+    Tìm các phương án cắt có hao hụt <= 1%, đã bao gồm lưỡi cắt.
     """
     # 1. Định nghĩa dữ liệu bài toán
     stock_length = 6000
     piece_lengths = [470, 460, 445, 430, 425, 190, 25]
     kerf_width = 1
-    max_waste_percentage = 0.015
+    max_waste_percentage = 0.01
 
     # 2. Khởi tạo mô hình
     model = cp_model.CpModel()
@@ -27,7 +27,7 @@ def find_efficient_cutting_patterns():
     # Ràng buộc 1: Tổng vật liệu sử dụng không được vượt quá chiều dài cây sắt
     model.Add(total_material_used <= stock_length)
 
-    # Ràng buộc 2: Hao hụt <= 1.5% (tương đương tổng sử dụng >= 98.5%)
+    # Ràng buộc 2: Hao hụt <= 1% (tương đương tổng sử dụng >= 99%)
     min_material_used = int(stock_length * (1 - max_waste_percentage))
     model.Add(total_material_used >= min_material_used) # <--- THÊM RÀNG BUỘC MỚI
 

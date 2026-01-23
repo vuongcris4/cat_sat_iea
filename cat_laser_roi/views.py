@@ -62,7 +62,7 @@ def run_optimization(request):
             is_doan_cuoi = [bool(item[4]) if len(item) > 4 else False for item in pieces_data if item]  # Nếu có bất kì dấu Tick nào thì lấy cột bool (Last), không thì cho mặc định toàn bộ là False
 
             patterns_data = get_or_calculate_patterns(
-                stock_length, piece_lengths, 1, 0.015, 10, 0
+                stock_length, piece_lengths, 1, 0.01, 10, 0
             )
             
             if patterns_data is not None and not patterns_data.empty:

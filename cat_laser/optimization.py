@@ -62,7 +62,7 @@ def solve_cp_model(a, k, length):
     model.Add(expr <= int(100 * (length - 60))).OnlyEnforceIf(b0) 
     model.Add(expr <= int(100 * (length - 0))).OnlyEnforceIf(b1) 
     model.Add(expr <= int(100 * (length - 15))).OnlyEnforceIf(b2) # expr + 15 <= length => expr <= length - 15
-    model.Add(int(100 * length * (1-0.015)) <= expr ) # Hao hụt 1%
+    model.Add(int(100 * length * (1-0.01)) <= expr ) # Hao hụt 1%
 
     # 9. Lớp callback để thu thập nghiệm
     class SolutionPrinter(cp_model.CpSolverSolutionCallback):

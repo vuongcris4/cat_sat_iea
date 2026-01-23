@@ -106,7 +106,7 @@ def generate_patterns(a, k, length):
     model.Add(expr <= int(100 * (length - 60))).OnlyEnforceIf(b0) 
     model.Add(expr <= int(100 * (length - 0))).OnlyEnforceIf(b1) 
     model.Add(expr <= int(100 * (length - 15))).OnlyEnforceIf(b2) # expr + 15 <= length => expr <= length - 15
-    model.Add(int(100 * length * (1-0.015)) <= expr ) # Hao hụt 1.5% từng cây
+    model.Add(int(100 * length * (1-0.01)) <= expr ) # Hao hụt 1% từng cây
 
     # 9. Lớp callback để thu thập nghiệm
     class SolutionPrinter(cp_model.CpSolverSolutionCallback):

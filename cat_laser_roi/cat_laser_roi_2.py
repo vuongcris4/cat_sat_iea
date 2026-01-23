@@ -246,7 +246,7 @@ if __name__ == "__main__":
 	RAW_STOCK_LENGTH = 6000 # Chiều dài cây sắt thô
 	TRIM_START = 3          # Phần tề đầu bị bỏ đi
 	KERF_WIDTH = 1
-	MAX_WASTE_PERCENTAGE = 0.015
+	MAX_WASTE_PERCENTAGE = 0.01
 	USE_PRIORITY_CONSTRAINT = True
 	TIME_LIMIT_SECONDS_PHASE_2 = 120
 	DOAN_THUA_CAT_TAY = 7
