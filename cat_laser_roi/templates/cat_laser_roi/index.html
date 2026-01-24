@@ -132,12 +132,22 @@
                 stockLengthInput.value = testLength;
                 stockLengthInput.style.backgroundColor = '#ffffcc'; // Highlight màu vàng nhạt
             }
+        } else if (message.startsWith("OPTIMAL_LENGTH::")) {
+            // Cập nhật field với chiều dài tối ưu (màu xanh)
+            const optimalLength = message.split('::')[1];
+            const stockLengthInput = document.getElementById('id_stock_length');
+            if (stockLengthInput) {
+                stockLengthInput.value = optimalLength;
+                stockLengthInput.style.backgroundColor = '#d4f1d4'; // Highlight màu xanh nhạt
+                stockLengthInput.style.fontWeight = 'bold';
+            }
         } else if (message === "!CLEAR!") {
             logOutput.innerHTML = "";
             // Reset màu nền của input về bình thường
             const stockLengthInput = document.getElementById('id_stock_length');
             if (stockLengthInput) {
                 stockLengthInput.style.backgroundColor = '';
+                stockLengthInput.style.fontWeight = '';
             }
         } else {
             logOutput.insertAdjacentHTML('beforeend', message);

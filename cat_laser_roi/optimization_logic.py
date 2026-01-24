@@ -282,10 +282,14 @@ def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_was
         print(f"   - Hao hụt: {best_waste_percentage:.2f}%<br>")
         print(f"   - Số lượng patterns khả dụng: {len(best_patterns)}<br><br>")
         
+        # Broadcast chiều dài tối ưu để frontend cập nhật field
+        print(f"OPTIMAL_LENGTH::{best_length}")
+        
         return best_length, best_waste_percentage, best_patterns
     else:
         print("❌ Không tìm thấy chiều dài phù hợp trong khoảng cho phép.<br>")
         return None, None, None
+
 
 
 
