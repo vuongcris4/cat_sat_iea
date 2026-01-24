@@ -52,16 +52,31 @@ def run_optimization(request):
             time_limit_minutes = data.get('time_limit_minutes')
             pieces_data = data.get('pieces_data')
 
+
             if not pieces_data:  # FIXED: Added check for empty pieces_data to prevent index errors downstream.
                 print("❌ Không có dữ liệu đoạn cắt được cung cấp.<br>")
                 return JsonResponse({'status': 'error', 'message': 'Không có dữ liệu đoạn cắt.'}, status=400)
 
-            piece_names = [str(item[0]) for item in pieces_data if item and item[0] is not None]
+            # Filter ra các hàng hợp lệ (có đủ cột tên, chiều dài, số lượng)
+            valid_rows = [
+                item for item in pieces_data 
+                if item and len(item) >= 3 
+                and item[0] is not None and item[0] != ''
+                and item[1] is not None and item[1] != ''
+                and item[2] is not None and item[2] != ''
+            ]
             
-            piece_lengths = [float(item[1]) for item in pieces_data if item and item[1] is not None]
-            demands_list = [int(item[2]) for item in pieces_data if item and item[2] is not None]
-            priorities_list = [int(item[3]) for item in pieces_data if item and item[3] is not None]
-            is_doan_cuoi = [bool(item[4]) if len(item) > 4 else False for item in pieces_data if item]  # Nếu có bất kì dấu Tick nào thì lấy cột bool (Last), không thì cho mặc định toàn bộ là False
+            if not valid_rows:
+                print("❌ Không có dữ liệu hợp lệ. Vui lòng kiểm tra lại bảng dữ liệu.<br>")
+                return JsonResponse({'status': 'error', 'message': 'Không có dữ liệu đoạn cắt hợp lệ.'}, status=400)
+            
+            # Parse dữ liệu từ các hàng hợp lệ
+            piece_names = [str(row[0]) for row in valid_rows]
+            piece_lengths = [float(row[1]) for row in valid_rows]
+            demands_list = [int(row[2]) for row in valid_rows]
+            priorities_list = [int(row[3]) if len(row) > 3 and row[3] is not None else 0 for row in valid_rows]
+            is_doan_cuoi = [bool(row[4]) if len(row) > 4 and row[4] is not None else False for row in valid_rows]
+
 
             # Nếu bật tính năng tối ưu chiều dài cây sắt
             if optimize_stock_length:
