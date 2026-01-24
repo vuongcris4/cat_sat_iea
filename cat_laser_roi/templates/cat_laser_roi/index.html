@@ -124,8 +124,21 @@
             const elapsed = parts[1];
             const total = parts[2];
             statusDisplay.innerText = `-> Thời gian: ${elapsed}s / ${total}s`;
+        } else if (message.startsWith("TESTING_LENGTH::")) {
+            // Cập nhật field chiều dài cây sắt khi đang test
+            const testLength = message.split('::')[1];
+            const stockLengthInput = document.getElementById('id_stock_length');
+            if (stockLengthInput) {
+                stockLengthInput.value = testLength;
+                stockLengthInput.style.backgroundColor = '#ffffcc'; // Highlight màu vàng nhạt
+            }
         } else if (message === "!CLEAR!") {
             logOutput.innerHTML = "";
+            // Reset màu nền của input về bình thường
+            const stockLengthInput = document.getElementById('id_stock_length');
+            if (stockLengthInput) {
+                stockLengthInput.style.backgroundColor = '';
+            }
         } else {
             logOutput.insertAdjacentHTML('beforeend', message);
         }

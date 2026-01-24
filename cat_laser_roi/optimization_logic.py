@@ -181,6 +181,9 @@ def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_was
     for test_length in range(min_length, max_length + 1, step):
         test_count += 1
         
+        # Broadcast chiều dài đang test để frontend có thể cập nhật UI
+        print(f"TESTING_LENGTH::{test_length}")
+        
         try:
             # Hiển thị tiến trình mỗi 10 lần thử
             if test_count % 10 == 1 or test_count == total_tests:
