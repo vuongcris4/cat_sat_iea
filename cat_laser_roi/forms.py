@@ -6,6 +6,13 @@ class OptimizationForm(forms.Form):
         label="Chiều dài cây sắt (mm)", 
         initial=6000
     )
+    max_waste_percentage = forms.DecimalField(
+        label="Hao hụt sắt tối đa (%)", 
+        initial=1.0,
+        min_value=0.01,
+        max_value=10.0,
+        decimal_places=2
+    )
     max_surplus = forms.IntegerField(
         label="Số lượng tồn kho tối đa (mỗi loại)", 
         initial=10

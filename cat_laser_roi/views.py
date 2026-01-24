@@ -44,6 +44,7 @@ def run_optimization(request):
             
             data = json.loads(request.body)
             stock_length = data.get('stock_length')
+            max_waste_percentage = float(data.get('max_waste_percentage', 1.0)) / 100  # Convert percentage to decimal
             max_surplus = data.get('max_surplus')
             use_priority_constraint = data.get('use_priority_constraint')
             # use_combined_mode = data.get('use_combined_mode')
@@ -62,7 +63,7 @@ def run_optimization(request):
             is_doan_cuoi = [bool(item[4]) if len(item) > 4 else False for item in pieces_data if item]  # Nếu có bất kì dấu Tick nào thì lấy cột bool (Last), không thì cho mặc định toàn bộ là False
 
             patterns_data = get_or_calculate_patterns(
-                stock_length, piece_lengths, 1, 0.01, 10, 0
+                stock_length, piece_lengths, 1, max_waste_percentage, 10, 0
             )
             
             if patterns_data is not None and not patterns_data.empty:

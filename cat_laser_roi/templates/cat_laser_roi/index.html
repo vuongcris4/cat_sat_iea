@@ -7,10 +7,11 @@
         <form id="optimizationForm" method="post" novalidate>
             {% csrf_token %}
             <div class="mb-3">{{ form.stock_length.label_tag }} {{ form.stock_length }}</div>
+            <div class="mb-3">{{ form.max_waste_percentage.label_tag }} {{ form.max_waste_percentage }}</div>
             <div class="mb-3">{{ form.max_surplus.label_tag }} {{ form.max_surplus }}</div>
             <div class="mb-3">{{ form.time_limit_minutes.label_tag }} {{ form.time_limit_minutes }}</div>
             <div class="form-check mb-3">{{ form.use_priority_constraint }} {{ form.use_priority_constraint.label_tag }}
-            <!-- <div class="form-check mb-3">{{ form.use_combined_mode }} {{ form.use_combined_mode.label_tag }} -->
+                <!-- <div class="form-check mb-3">{{ form.use_combined_mode }} {{ form.use_combined_mode.label_tag }} -->
             </div>
             <!-- <h4 class="mt-4">Chi tiết các đoạn cắt:</h4> -->
             <div id="handsontable-container" class="border rounded"></div>
@@ -135,6 +136,7 @@
         const tableData = hot.getData().filter(row => row.some(cell => cell !== null && cell !== '' && cell !== undefined));
         const payload = {
             stock_length: parseInt(document.getElementById('id_stock_length').value),
+            max_waste_percentage: parseFloat(document.getElementById('id_max_waste_percentage').value),
             max_surplus: parseInt(document.getElementById('id_max_surplus').value),
             use_priority_constraint: document.getElementById('id_use_priority_constraint').checked,
             time_limit_minutes: parseInt(document.getElementById('id_time_limit_minutes').value),
