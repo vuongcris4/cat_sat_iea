@@ -166,7 +166,8 @@ def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_was
     """
     print("<br>=== BẮT ĐẦU TÌM CHIỀU DÀI CÂY SẮT TỐI ƯU ===<br>")
     print(f"Khoảng tìm kiếm: {min_length}mm - {max_length}mm (bước nhảy {step}mm)<br>")
-    print(f"Đang thử nghiệm {(max_length - min_length) // step + 1} chiều dài khác nhau...<br><br>")
+    total_tests = (max_length - min_length) // step + 1
+    print(f"Đang thử nghiệm {total_tests} chiều dài khác nhau...<br><br>")
     
     best_length = None
     best_waste_percentage = float('inf')
@@ -174,65 +175,86 @@ def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_was
     best_total_bars = float('inf')
     
     results_summary = []
+    test_count = 0
     
     # Duyệt qua các chiều dài từ min_length đến max_length với bước nhảy step
     for test_length in range(min_length, max_length + 1, step):
-        # Tính toán patterns cho chiều dài này
-        patterns_data = get_or_calculate_patterns(
-            test_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay
-        )
+        test_count += 1
         
-        if patterns_data is None or patterns_data.empty:
-            continue
-        
-        # Tạo một bài toán tối ưu đơn giản để tính số lượng cây sắt cần thiết
-        model = cp_model.CpModel()
-        x = [model.NewIntVar(0, sum(demands_list) * 2, f'x_{j}') for j in range(len(patterns_data))]
-        
-        # Ràng buộc về nhu cầu sản xuất
-        for i in range(len(piece_lengths)):
-            produced = sum(x[j] * patterns_data.iloc[j][f'segment_{i}'] for j in range(len(patterns_data)))
-            model.Add(produced >= demands_list[i])
-        
-        # Tối ưu hóa hao hụt
-        model.Minimize(sum(x[j] * patterns_data.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_data))))
-        
-        solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = 30  # Giới hạn thời gian cho mỗi lần thử
-        solver.log_search_progress = False
-        status = solver.Solve(model)
-        
-        if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-            total_bars = sum(solver.Value(x[j]) for j in range(len(patterns_data)))
-            total_waste = solver.ObjectiveValue() / SCALING_FACTOR
+        try:
+            # Hiển thị tiến trình mỗi 10 lần thử
+            if test_count % 10 == 1 or test_count == total_tests:
+                print(f"🔍 Đang kiểm tra chiều dài {test_length}mm ({test_count}/{total_tests})...<br>")
             
-            if total_bars > 0:
-                waste_percentage = (total_waste / (test_length * total_bars)) * 100
+            # Tính toán patterns cho chiều dài này
+            patterns_data = get_or_calculate_patterns(
+                test_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay
+            )
+            
+            if patterns_data is None or patterns_data.empty:
+                if test_count % 10 == 1 or test_count == total_tests:
+                    print(f"  ⚠️ Không tìm thấy pattern phù hợp cho {test_length}mm<br>")
+                continue
+            
+            # Tạo một bài toán tối ưu đơn giản để tính số lượng cây sắt cần thiết
+            model = cp_model.CpModel()
+            x = [model.NewIntVar(0, sum(demands_list) * 2, f'x_{j}') for j in range(len(patterns_data))]
+            
+            # Ràng buộc về nhu cầu sản xuất
+            for i in range(len(piece_lengths)):
+                produced = sum(x[j] * patterns_data.iloc[j][f'segment_{i}'] for j in range(len(patterns_data)))
+                model.Add(produced >= demands_list[i])
+            
+            # Tối ưu hóa hao hụt
+            model.Minimize(sum(x[j] * patterns_data.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_data))))
+            
+            solver = cp_model.CpSolver()
+            solver.parameters.max_time_in_seconds = 10  # Giảm từ 30s xuống 10s để nhanh hơn
+            solver.log_search_progress = False
+            status = solver.Solve(model)
+            
+            if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+                total_bars = sum(solver.Value(x[j]) for j in range(len(patterns_data)))
+                total_waste = solver.ObjectiveValue() / SCALING_FACTOR
                 
-                results_summary.append({
-                    'length': test_length,
-                    'bars': total_bars,
-                    'waste_mm': total_waste,
-                    'waste_pct': waste_percentage
-                })
-                
-                # So sánh và cập nhật giải pháp tốt nhất
-                # Ưu tiên: hao hụt % thấp nhất, nếu bằng nhau thì chọn số cây sắt ít nhất
-                if (waste_percentage < best_waste_percentage or 
-                    (abs(waste_percentage - best_waste_percentage) < 0.01 and total_bars < best_total_bars)):
-                    best_length = test_length
-                    best_waste_percentage = waste_percentage
-                    best_patterns = patterns_data
-                    best_total_bars = total_bars
+                if total_bars > 0:
+                    waste_percentage = (total_waste / (test_length * total_bars)) * 100
+                    
+                    results_summary.append({
+                        'length': test_length,
+                        'bars': total_bars,
+                        'waste_mm': total_waste,
+                        'waste_pct': waste_percentage
+                    })
+                    
+                    # So sánh và cập nhật giải pháp tốt nhất
+                    # Ưu tiên: hao hụt % thấp nhất, nếu bằng nhau thì chọn số cây sắt ít nhất
+                    if (waste_percentage < best_waste_percentage or 
+                        (abs(waste_percentage - best_waste_percentage) < 0.01 and total_bars < best_total_bars)):
+                        best_length = test_length
+                        best_waste_percentage = waste_percentage
+                        best_patterns = patterns_data
+                        best_total_bars = total_bars
+                        print(f"  ✨ Tìm thấy chiều dài tốt hơn: {best_length}mm (hao hụt: {best_waste_percentage:.2f}%, {best_total_bars} cây)<br>")
+            else:
+                if test_count % 10 == 1 or test_count == total_tests:
+                    print(f"  ⚠️ Không giải được bài toán cho {test_length}mm<br>")
+                    
+        except Exception as e:
+            print(f"  ❌ Lỗi khi kiểm tra {test_length}mm: {str(e)}<br>")
+            continue
     
-    if best_length is not None:
+    print(f"<br>✅ Hoàn thành tìm kiếm! Đã kiểm tra {test_count} chiều dài, tìm thấy {len(results_summary)} kết quả khả thi.<br><br>")
+    
+    if best_length is not None and len(results_summary) > 0:
         print("📊 KẾT QUẢ TÌM KIẾM (10 kết quả tốt nhất):<br>")
         
         # Sắp xếp theo hao hụt % tăng dần
         results_summary.sort(key=lambda x: (x['waste_pct'], x['bars']))
         
         # Hiển thị top 10
-        results_df = pd.DataFrame(results_summary[:10])
+        display_count = min(10, len(results_summary))
+        results_df = pd.DataFrame(results_summary[:display_count])
         results_df.columns = ['Chiều dài (mm)', 'Số cây sắt', 'Hao hụt (mm)', 'Hao hụt (%)']
         
         # Highlight hàng tốt nhất
