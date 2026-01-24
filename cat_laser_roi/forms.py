@@ -27,6 +27,11 @@ class OptimizationForm(forms.Form):
         required=False, 
         initial=False
     )
+    optimize_stock_length = forms.BooleanField(
+        label="Tự động tìm chiều dài cây sắt tối ưu (5000-6000mm, bước 10mm)",
+        required=False,
+        initial=False
+    )
     time_limit_minutes = forms.IntegerField(
         label="Thời gian chạy tối đa (3x phút)", 
         initial=2

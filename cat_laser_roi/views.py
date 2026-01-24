@@ -8,7 +8,7 @@ import time
 from channels.layers import get_channel_layer
 from iea_project.consumers import LOG_HISTORY
 from .forms import OptimizationForm
-from .optimization_logic import get_or_calculate_patterns, solve_phase2
+from .optimization_logic import get_or_calculate_patterns, solve_phase2, find_optimal_stock_length
 
 class TeeStream:
     def __init__(self, websocket_room):
@@ -47,6 +47,7 @@ def run_optimization(request):
             max_waste_percentage = float(data.get('max_waste_percentage', 1.0)) / 100  # Convert percentage to decimal
             max_surplus = data.get('max_surplus')
             use_priority_constraint = data.get('use_priority_constraint')
+            optimize_stock_length = data.get('optimize_stock_length', False)
             # use_combined_mode = data.get('use_combined_mode')
             time_limit_minutes = data.get('time_limit_minutes')
             pieces_data = data.get('pieces_data')
@@ -62,9 +63,32 @@ def run_optimization(request):
             priorities_list = [int(item[3]) for item in pieces_data if item and item[3] is not None]
             is_doan_cuoi = [bool(item[4]) if len(item) > 4 else False for item in pieces_data if item]  # Nếu có bất kì dấu Tick nào thì lấy cột bool (Last), không thì cho mặc định toàn bộ là False
 
-            patterns_data = get_or_calculate_patterns(
-                stock_length, piece_lengths, 1, max_waste_percentage, 10, 0
-            )
+            # Nếu bật tính năng tối ưu chiều dài cây sắt
+            if optimize_stock_length:
+                optimal_length, optimal_waste_pct, patterns_data = find_optimal_stock_length(
+                    piece_lengths=piece_lengths,
+                    demands_list=demands_list,
+                    kerf_width=1,
+                    max_waste_percentage=max_waste_percentage,
+                    min_length=5000,
+                    max_length=6000,
+                    step=10,
+                    trim_start=10,
+                    doan_thua_cat_tay=0
+                )
+                
+                if optimal_length is None:
+                    print("❌ Không tìm thấy chiều dài tối ưu. Sử dụng chiều dài mặc định.<br>")
+                    stock_length = stock_length  # Giữ nguyên giá trị người dùng nhập
+                    patterns_data = get_or_calculate_patterns(
+                        stock_length, piece_lengths, 1, max_waste_percentage, 10, 0
+                    )
+                else:
+                    stock_length = optimal_length  # Sử dụng chiều dài tối ưu
+            else:
+                patterns_data = get_or_calculate_patterns(
+                    stock_length, piece_lengths, 1, max_waste_percentage, 10, 0
+                )
             
             if patterns_data is not None and not patterns_data.empty:
                 solve_phase2(
