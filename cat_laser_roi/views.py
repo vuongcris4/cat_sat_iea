@@ -46,6 +46,7 @@ def run_optimization(request):
             stock_length = data.get('stock_length')
             max_waste_percentage = float(data.get('max_waste_percentage', 1.0)) / 100  # Convert percentage to decimal
             max_surplus = data.get('max_surplus')
+            max_total_surplus = data.get('max_total_surplus')  # NEW: Tổng tồn kho tối đa
             use_priority_constraint = data.get('use_priority_constraint')
             optimize_stock_length = data.get('optimize_stock_length', False)
             # use_combined_mode = data.get('use_combined_mode')
@@ -78,32 +79,42 @@ def run_optimization(request):
             is_doan_cuoi = [bool(row[4]) if len(row) > 4 and row[4] is not None else False for row in valid_rows]
 
 
+
             # Nếu bật tính năng tối ưu chiều dài cây sắt
             if optimize_stock_length:
-                optimal_length, optimal_waste_pct, patterns_data = find_optimal_stock_length(
+                optimal_length, optimal_waste_pct, best_result = find_optimal_stock_length(
+                    piece_names=piece_names,
                     piece_lengths=piece_lengths,
                     demands_list=demands_list,
+                    priorities_list=priorities_list,
+                    is_doan_cuoi=is_doan_cuoi,
+                    max_surplus=max_surplus,
+                    use_priority_constraint=use_priority_constraint,
+                    time_limit_seconds=time_limit_minutes * 60,
                     kerf_width=1,
                     max_waste_percentage=max_waste_percentage,
                     min_length=5000,
                     max_length=6000,
                     step=10,
                     trim_start=10,
-                    doan_thua_cat_tay=0
+                    doan_thua_cat_tay=0,
+                    max_total_surplus=max_total_surplus  # NEW: Pass tổng tồn kho tối đa
                 )
                 
                 if optimal_length is None:
-                    print("❌ Không tìm thấy chiều dài tối ưu. Sử dụng chiều dài mặc định.<br>")
-                    stock_length = stock_length  # Giữ nguyên giá trị người dùng nhập
-                    patterns_data = get_or_calculate_patterns(
-                        stock_length, piece_lengths, 1, max_waste_percentage, 10, 0
-                    )
+                    print("❌ Không tìm thấy chiều dài tối ưu trong khoảng cho phép.<br>")
                 else:
-                    stock_length = optimal_length  # Sử dụng chiều dài tối ưu
-            else:
-                patterns_data = get_or_calculate_patterns(
-                    stock_length, piece_lengths, 1, max_waste_percentage, 10, 0
-                )
+                    print(f"<br>✅ Hoàn tất! Chiều dài tối ưu đã được tìm thấy: <b>{optimal_length}mm</b><br>")
+                    print(f"<br><i>💡 Để tính kế hoạch cắt chi tiết, vui lòng bỏ tick checkbox và nhập chiều dài {optimal_length}mm vào trường 'Chiều dài cây sắt'.</i><br>")
+                
+                # KHÔNG chạy Phase 2 - chỉ hiển thị kết quả tìm kiếm
+                return JsonResponse({'status': 'success', 'message': 'Optimal length search completed.'})
+
+            
+            # Chạy bình thường khi không dùng tìm kiếm tối ưu
+            patterns_data = get_or_calculate_patterns(
+                stock_length, piece_lengths, 1, max_waste_percentage, 10, 0
+            )
             
             if patterns_data is not None and not patterns_data.empty:
                 solve_phase2(
@@ -116,8 +127,10 @@ def run_optimization(request):
                     max_surplus,
                     use_priority_constraint=use_priority_constraint,
                     is_doan_cuoi=is_doan_cuoi,
-                    time_limit_seconds=time_limit_minutes * 60
+                    time_limit_seconds=time_limit_minutes * 60,
+                    optimal_stock_info=None  # Không có optimal info khi chạy bình thường
                 )
+
             
             return JsonResponse({'status': 'success', 'message': 'Optimization process finished.'})
 

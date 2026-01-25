@@ -144,15 +144,23 @@ def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste
         return patterns
 
 
-def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_waste_percentage=0.01,
-                               min_length=5000, max_length=6000, step=10, trim_start=10, doan_thua_cat_tay=0):
+def find_optimal_stock_length(piece_names, piece_lengths, demands_list, priorities_list, is_doan_cuoi,
+                               max_surplus, use_priority_constraint, time_limit_seconds,
+                               kerf_width=1, max_waste_percentage=0.01,
+                               min_length=5000, max_length=6000, step=10, trim_start=10, doan_thua_cat_tay=0,
+                               max_total_surplus=None):
     """
-    Tìm chiều dài cây sắt tối ưu trong khoảng [min_length, max_length]
-    với bước nhảy step sao cho hao hụt là ít nhất.
+    Tìm chiều dài cây sắt tối ưu bằng cách chạy ĐẦY ĐỦ Phase 2 optimization cho mỗi chiều dài.
     
     Args:
+        piece_names: Tên các đoạn sắt
         piece_lengths: Danh sách chiều dài các đoạn cắt
         demands_list: Danh sách nhu cầu số lượng từng đoạn
+        priorities_list: Danh sách độ ưu tiên
+        is_doan_cuoi: Danh sách đánh dấu đoạn cuối
+        max_surplus: Số lượng tồn kho tối đa mỗi loại
+        use_priority_constraint: Có sử dụng ràng buộc ưu tiên không
+        time_limit_seconds: Thời gian giới hạn cho Phase 2
         kerf_width: Độ rộng lưỡi cắt (mặc định 1mm)
         max_waste_percentage: Phần trăm hao hụt tối đa cho mỗi pattern (mặc định 1%)
         min_length: Chiều dài tối thiểu để thử (mặc định 5000mm)
@@ -160,34 +168,39 @@ def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_was
         step: Bước nhảy giữa các chiều dài (mặc định 10mm)
         trim_start: Hao hụt tề đầu
         doan_thua_cat_tay: Đoạn thừa cắt tay
+        max_total_surplus: Tổng tồn kho tối đa cho tất cả các loại (None = không giới hạn)
     
     Returns:
-        tuple: (optimal_length, min_waste_percentage, patterns_data)
+        tuple: (optimal_length, min_waste_percentage, best_result_dict)
     """
-    print("<br>=== BẮT ĐẦU TÌM CHIỀU DÀI CÂY SẮT TỐI ƯU ===<br>")
+    print("<br>=== BẮT ĐẦU TÌM CHIỀU DÀI CÂY SẮT TỐI ƯU (CHẾ ĐỘ ĐẦY ĐỦ) ===<br>")
     print(f"Khoảng tìm kiếm: {min_length}mm - {max_length}mm (bước nhảy {step}mm)<br>")
     total_tests = (max_length - min_length) // step + 1
-    print(f"Đang thử nghiệm {total_tests} chiều dài khác nhau...<br><br>")
+    print(f"<b>⚠️ CẢNH BÁO:</b> Sẽ chạy {total_tests} tests đầy đủ. Ước tính thời gian: ~{total_tests * time_limit_seconds * 3 / 3600:.1f} giờ<br>")
+    if max_total_surplus:
+        print(f"<b>📊 Ràng buộc:</b> Tổng tồn kho tối đa = {max_total_surplus} đoạn<br><br>")
+    else:
+        print(f"<b>📊 Ràng buộc:</b> Không giới hạn tổng tồn kho<br><br>")
     
     best_length = None
     best_waste_percentage = float('inf')
-    best_patterns = None
+    best_total_surplus = float('inf')
     best_total_bars = float('inf')
+    best_result_dict = None
     
     results_summary = []
     test_count = 0
     
-    # Duyệt qua các chiều dài từ min_length đến max_length với bước nhảy step
+    # Duyệt qua các chiều dài
     for test_length in range(min_length, max_length + 1, step):
         test_count += 1
         
-        # Broadcast chiều dài đang test để frontend có thể cập nhật UI
+        # Broadcast chiều dài đang test
         print(f"TESTING_LENGTH::{test_length}")
         
         try:
-            # Hiển thị tiến trình mỗi 10 lần thử
-            if test_count % 10 == 1 or test_count == total_tests:
-                print(f"🔍 Đang kiểm tra chiều dài {test_length}mm ({test_count}/{total_tests})...<br>")
+            # Hiển thị tiến trình
+            print(f"🔍 <b>Test {test_count}/{total_tests}</b>: Đang kiểm tra chiều dài {test_length}mm...<br>")
             
             # Tính toán patterns cho chiều dài này
             patterns_data = get_or_calculate_patterns(
@@ -195,54 +208,76 @@ def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_was
             )
             
             if patterns_data is None or patterns_data.empty:
-                if test_count % 10 == 1 or test_count == total_tests:
-                    print(f"  ⚠️ Không tìm thấy pattern phù hợp cho {test_length}mm<br>")
+                print(f"  ⚠️ Không tìm thấy pattern phù hợp cho {test_length}mm<br>")
                 continue
             
-            # Tạo một bài toán tối ưu đơn giản để tính số lượng cây sắt cần thiết
-            model = cp_model.CpModel()
-            x = [model.NewIntVar(0, sum(demands_list) * 2, f'x_{j}') for j in range(len(patterns_data))]
+            # Chạy ĐẦY ĐỦ Phase 2 và nhận kết quả trực tiếp
+            result = solve_phase2(
+                test_length,
+                patterns_data,
+                piece_names,
+                piece_lengths,
+                demands_list,
+                priorities_list,
+                max_surplus,
+                use_priority_constraint=use_priority_constraint,
+                is_doan_cuoi=is_doan_cuoi,
+                time_limit_seconds=time_limit_seconds,
+                optimal_stock_info=None
+            )
             
-            # Ràng buộc về nhu cầu sản xuất
-            for i in range(len(piece_lengths)):
-                produced = sum(x[j] * patterns_data.iloc[j][f'segment_{i}'] for j in range(len(patterns_data)))
-                model.Add(produced >= demands_list[i])
+            if result is None:
+                print(f"  ⚠️ Không tìm thấy giải pháp khả thi cho {test_length}mm<br>")
+                continue
             
-            # Tối ưu hóa hao hụt
-            model.Minimize(sum(x[j] * patterns_data.iloc[j]['Hao hụt (mm)'] for j in range(len(patterns_data))))
+            # Kiểm tra ràng buộc tổng tồn kho
+            if max_total_surplus is not None and result['total_surplus'] > max_total_surplus:
+                print(f"  ⚠️ Tồn kho vượt quá giới hạn ({result['total_surplus']} > {max_total_surplus})<br>")
+                continue
             
-            solver = cp_model.CpSolver()
-            solver.parameters.max_time_in_seconds = 10  # Giảm từ 30s xuống 10s để nhanh hơn
-            solver.log_search_progress = False
-            status = solver.Solve(model)
+            # Lưu kết quả
+            print(f"  ✅ Kết quả: {result['total_bars']} cây, hao hụt {result['waste_percentage']:.2f}%, tồn kho {result['total_surplus']} đoạn<br>")
             
-            if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-                total_bars = sum(solver.Value(x[j]) for j in range(len(patterns_data)))
-                total_waste = solver.ObjectiveValue() / SCALING_FACTOR
+            results_summary.append({
+                'length': test_length,
+                'bars': result['total_bars'],
+                'waste_pct': result['waste_percentage'],
+                'total_surplus': result['total_surplus'],
+                'result': result
+            })
+            
+            # So sánh và cập nhật giải pháp tốt nhất
+            # Priority 1: Waste percentage (với tolerance 0.01%)
+            # Priority 2: Total surplus (khi waste tương đương)
+            # Priority 3: Total bars (tie-breaker cuối cùng)
+            is_better = False
+            
+            if result['waste_percentage'] < best_waste_percentage - 0.01:
+                # Hao hụt tốt hơn rõ rệt
+                is_better = True
+            elif abs(result['waste_percentage'] - best_waste_percentage) < 0.01:
+                # Hao hụt tương đương, so sánh tồn kho
+                if result['total_surplus'] < best_total_surplus:
+                    is_better = True
+                elif result['total_surplus'] == best_total_surplus:
+                    # Tồn kho bằng nhau, so sánh số cây
+                    if result['total_bars'] < best_total_bars:
+                        is_better = True
+            
+            if is_better:
+                best_length = test_length
+                best_waste_percentage = result['waste_percentage']
+                best_total_surplus = result['total_surplus']
+                best_total_bars = result['total_bars']
+                best_result_dict = {
+                    'length': test_length,
+                    'bars': result['total_bars'],
+                    'waste_pct': result['waste_percentage'],
+                    'total_surplus': result['total_surplus'],
+                    'result': result
+                }
+                print(f"  ✨ <b>Tìm thấy chiều dài tốt hơn: {best_length}mm (hao hụt: {best_waste_percentage:.2f}%, tồn kho: {best_total_surplus}, {best_total_bars} cây)</b><br>")
                 
-                if total_bars > 0:
-                    waste_percentage = (total_waste / (test_length * total_bars)) * 100
-                    
-                    results_summary.append({
-                        'length': test_length,
-                        'bars': total_bars,
-                        'waste_mm': total_waste,
-                        'waste_pct': waste_percentage
-                    })
-                    
-                    # So sánh và cập nhật giải pháp tốt nhất
-                    # Ưu tiên: hao hụt % thấp nhất, nếu bằng nhau thì chọn số cây sắt ít nhất
-                    if (waste_percentage < best_waste_percentage or 
-                        (abs(waste_percentage - best_waste_percentage) < 0.01 and total_bars < best_total_bars)):
-                        best_length = test_length
-                        best_waste_percentage = waste_percentage
-                        best_patterns = patterns_data
-                        best_total_bars = total_bars
-                        print(f"  ✨ Tìm thấy chiều dài tốt hơn: {best_length}mm (hao hụt: {best_waste_percentage:.2f}%, {best_total_bars} cây)<br>")
-            else:
-                if test_count % 10 == 1 or test_count == total_tests:
-                    print(f"  ⚠️ Không giải được bài toán cho {test_length}mm<br>")
-                    
         except Exception as e:
             print(f"  ❌ Lỗi khi kiểm tra {test_length}mm: {str(e)}<br>")
             continue
@@ -252,13 +287,14 @@ def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_was
     if best_length is not None and len(results_summary) > 0:
         print("📊 KẾT QUẢ TÌM KIẾM (10 kết quả tốt nhất):<br>")
         
-        # Sắp xếp theo hao hụt % tăng dần
-        results_summary.sort(key=lambda x: (x['waste_pct'], x['bars']))
+        # Sắp xếp theo thứ tự ưu tiên: waste_pct -> total_surplus -> bars
+        results_summary.sort(key=lambda x: (x['waste_pct'], x['total_surplus'], x['bars']))
         
         # Hiển thị top 10
         display_count = min(10, len(results_summary))
         results_df = pd.DataFrame(results_summary[:display_count])
-        results_df.columns = ['Chiều dài (mm)', 'Số cây sắt', 'Hao hụt (mm)', 'Hao hụt (%)']
+        results_df = results_df[['length', 'bars', 'waste_pct', 'total_surplus']]
+        results_df.columns = ['Chiều dài (mm)', 'Số cây sắt', 'Hao hụt (%)', 'Tồn kho (đoạn)']
         
         # Highlight hàng tốt nhất
         def highlight_best(row):
@@ -271,8 +307,8 @@ def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_was
         styler = styler.format({
             'Chiều dài (mm)': '{:.0f}',
             'Số cây sắt': '{:.0f}',
-            'Hao hụt (mm)': '{:,.1f}',
-            'Hao hụt (%)': '{:.2f}'
+            'Hao hụt (%)': '{:.2f}',
+            'Tồn kho (đoạn)': '{:.0f}'
         })
         
         print(styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
@@ -280,15 +316,17 @@ def find_optimal_stock_length(piece_lengths, demands_list, kerf_width=1, max_was
         print(f"<br>✅ <b>CHIỀU DÀI TỐI ƯU: {best_length}mm</b><br>")
         print(f"   - Số lượng cây sắt cần: {best_total_bars} cây<br>")
         print(f"   - Hao hụt: {best_waste_percentage:.2f}%<br>")
-        print(f"   - Số lượng patterns khả dụng: {len(best_patterns)}<br><br>")
+        print(f"   - Tổng tồn kho: {best_total_surplus} đoạn<br><br>")
         
-        # Broadcast chiều dài tối ưu để frontend cập nhật field
+        # Broadcast chiều dài tối ưu
         print(f"OPTIMAL_LENGTH::{best_length}")
         
-        return best_length, best_waste_percentage, best_patterns
+        return best_length, best_waste_percentage, best_result_dict
     else:
         print("❌ Không tìm thấy chiều dài phù hợp trong khoảng cho phép.<br>")
         return None, None, None
+
+
 
 
 
@@ -321,7 +359,7 @@ class SolverTimer(threading.Thread):
 # GIAI ĐOẠN 2
 # ===================================================================
 def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, demands_list, priorities_list,
-                 max_surplus, use_priority_constraint=False, is_doan_cuoi=None, time_limit_seconds=120.0):
+                 max_surplus, use_priority_constraint=False, is_doan_cuoi=None, time_limit_seconds=120.0, optimal_stock_info=None):
     """
     Từ các pattern đã tìm thấy, xác định số lần thực hiện mỗi pattern
     để đáp ứng nhu cầu sản xuất và tối ưu hóa theo các mục tiêu.
@@ -450,6 +488,16 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         print("!CLEAR!")
         now = datetime.now()
         print(f"<b>Thời gian: {now.strftime('%d/%m/%Y %H:%M:%S')}</b><br>")
+        
+        # Hiển thị thông tin chiều dài tối ưu nếu có
+        if optimal_stock_info:
+            print(f"<div style='background-color: #d4edda; padding: 10px; margin: 10px 0; border-left: 4px solid #28a745;'>")
+            print(f"<b>🎯 ĐÃ TÌM THẤY CHIỀU DÀI TỐI ƯU:</b> {optimal_stock_info['length']}mm<br>")
+            print(f"   - Hao hụt: {optimal_stock_info['waste_pct']:.2f}%<br>")
+            print(f"   - Số lượng cây sắt: {optimal_stock_info['total_bars']} cây<br>")
+            print(f"   - Đã kiểm tra {optimal_stock_info['tests_count']} chiều dài (5000-6000mm, bước 10mm)")
+            print(f"</div><br>")
+        
         print(f"<b>Chiều dài cây sắt:</b> {raw_stock_length}mm<br>")
         
         plan_indices = [j for j in range(len(patterns_df)) if solver.Value(x[j]) > 0]   # Chi in nhung pattern co SL cay sat > 0, tim vi tri
@@ -543,5 +591,17 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
             plan_styler.set_table_styles(table_styles)
         
         print(plan_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
+        
+        # Return structured data for programmatic use
+        result = {
+            'total_bars': int(total_bars_used),
+            'total_waste_mm': float(final_waste),
+            'waste_percentage': float(final_waste/(raw_stock_length*total_bars_used)*100) if total_bars_used > 0 else 0,
+            'total_surplus': int(sum(solver.Value(surplus_vars[i]) for i in range(len(piece_lengths)))),
+            'production_plan': production_plan,
+            'summary_df': summary_df
+        }
+        return result
     else:
         print("<br>❌ Rất tiếc, không thể tìm ra kế hoạch sản xuất phù hợp.")
+        return None

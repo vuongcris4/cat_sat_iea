@@ -17,6 +17,12 @@ class OptimizationForm(forms.Form):
         label="Số lượng tồn kho tối đa (mỗi loại)", 
         initial=10
     )
+    max_total_surplus = forms.IntegerField(
+        label="Tổng tồn kho tối đa (tất cả loại)",
+        initial=1000,
+        required=False,
+        help_text="Giới hạn tổng số đoạn tồn kho của tất cả các loại cộng lại (chỉ áp dụng khi tìm chiều dài tối ưu)"
+    )
     use_priority_constraint = forms.BooleanField(
         label="Ưu tiên pattern có đoạn cuối khoét lỗ ít nhất", 
         required=False, 
