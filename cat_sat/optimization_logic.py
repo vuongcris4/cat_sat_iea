@@ -535,7 +535,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             custom_formatter_int = lambda x: f"{int(x)}" if x == int(x) else f"{x:.1f}"
             # rename_map = {f'segment_{i}': f'{self.piece_names[i]} <br>({custom_formatter_int(self.segment_sizes[i])}mm)' for i in range(m)}
             rename_map = {f'segment_{i}': f'{custom_formatter_int(self.segment_sizes[i])}' for i in range(m)}
-            factor_rename_map = {f'factor_{fr}': f'{fr}<br>cây/bó' for fr in pos_factors}
+            factor_rename_map = {f'factor_{fr}': f'<span style="white-space:nowrap">{fr}</span><br>c/b' for fr in pos_factors}
             
             plan_df.rename(columns=rename_map, inplace=True)
             plan_df.rename(columns=factor_rename_map, inplace=True)
@@ -574,9 +574,9 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             
             # Thêm viền đậm (giống cat_laser_roi)
             table_styles = []
-            # --- THÊM: TĂNG FONT HEADER (TH) ---
+            # --- THÊM: TĂNG FONT HEADER (TH) + NOWRAP ---
             table_styles.append(
-                {'selector': 'th', 'props': [('font-size', '1.1rem')]}
+                {'selector': 'th', 'props': [('font-size', '1.1rem'), ('white-space', 'nowrap')]}
             )
             border_style = '2px solid black'
             

@@ -28,15 +28,53 @@ class OptimizationForm(forms.Form):
         required=False, 
         initial=True
     )
+    pattern_limit = forms.IntegerField(
+        label="Số lượng patterns tối đa",
+        initial=100000,
+        min_value=1000,
+        max_value=100000,
+        required=False,
+        help_text="Giới hạn số patterns để tối ưu hóa (100,000 = không giới hạn, 50,000 khuyến nghị cho 20+ sản phẩm)"
+    )
     use_combined_mode = forms.BooleanField(
         label="Chế độ cắt kết hợp Laser + Tự động", 
         required=False, 
         initial=False
     )
     optimize_stock_length = forms.BooleanField(
-        label="Tự động tìm chiều dài cây sắt tối ưu (5000-6000mm, bước 10mm)",
+        label="Tự động tìm chiều dài cây sắt tối ưu (5000-6000mm)",
         required=False,
         initial=False
+    )
+    optimize_min_length = forms.IntegerField(
+        label="Chiều dài bắt đầu (mm)",
+        initial=5000,
+        min_value=1000,
+        max_value=10000,
+        required=False,
+        help_text="Chiều dài cây sắt tối thiểu để thử nghiệm"
+    )
+    optimize_max_length = forms.IntegerField(
+        label="Chiều dài kết thúc (mm)",
+        initial=6000,
+        min_value=1000,
+        max_value=10000,
+        required=False,
+        help_text="Chiều dài cây sắt tối đa để thử nghiệm"
+    )
+    optimize_search_step = forms.IntegerField(
+        label="Bước nhảy tìm kiếm (mm)",
+        initial=10,
+        min_value=1,
+        max_value=100,
+        required=False,
+        help_text="Bước nhảy giữa các chiều dài khi tìm kiếm (10mm = 101 tests, 50mm = 21 tests)"
+    )
+    optimize_stop_on_first = forms.BooleanField(
+        label="Dừng ngay khi tìm thấy nghiệm khả thi đầu tiên",
+        required=False,
+        initial=False,
+        help_text="Khi bật, sẽ dừng tìm kiếm ngay khi tìm thấy nghiệm khả thi đầu tiên (nhanh hơn nhưng có thể không tối ưu nhất)"
     )
     time_limit_minutes = forms.IntegerField(
         label="Thời gian chạy tối đa (3x phút)", 

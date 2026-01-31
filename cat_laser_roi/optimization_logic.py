@@ -7,20 +7,26 @@ import hashlib
 from datetime import datetime
 import time
 import threading
-import math 
+import math
+import redis
+import json 
 
 # HỆ SỐ ĐỂ NHÂN CÁC GIÁ TRỊ THẬP PHÂN THÀNH SỐ NGUYÊN
 SCALING_FACTOR = 10
 # GIỚI HẠN SỐ LƯỢNG PATTERN TỐI ĐA ĐỂ TÍNH TOÁN HOẶC TẢI LẠI
 SOLUTION_LIMIT = 100000
+SOLUTION_LIMIT_QUICK_MODE = 50000  # Giới hạn cho chế độ tìm chiều dài tối ưu
 
 # ===================================================================
 # GIAI ĐOẠN 1
 # ===================================================================
-def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay=0):
+def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay=0, pattern_limit=None):
     """
     Tìm tất cả các cách cắt (pattern) khả thi từ một cây sắt tiêu chuẩn.
     Mỗi cách cắt phải thỏa mãn điều kiện về hao hụt tối đa cho phép.
+    
+    Args:
+        pattern_limit: Số lượng patterns tối đa (None = sử dụng SOLUTION_LIMIT)
     """
     print("⏳ Bắt đầu Giai đoạn 1: Tìm các phương án cắt hiệu quả...<br>")
 
@@ -78,10 +84,16 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
             self.solutions.append(solution)
             
     # --- SỬA ĐỔI: Truyền giới hạn vào khi khởi tạo ---
-    solution_collector = SolutionAndLogCollector(counts, SOLUTION_LIMIT)
+    # Sử dụng giới hạn từ user input hoặc mặc định
+    if pattern_limit is None:
+        limit = SOLUTION_LIMIT
+    else:
+        limit = pattern_limit
+    
+    solution_collector = SolutionAndLogCollector(counts, limit)
     solver.parameters.enumerate_all_solutions = True
 
-    print(f"Vui lòng chờ, bộ giải đang tìm kiếm các pattern (tối đa {SOLUTION_LIMIT:,} phương án)... (GĐ 1)<br>")
+    print(f"Vui lòng chờ, bộ giải đang tìm kiếm các pattern (tối đa {limit:,} phương án)... (GĐ 1)<br>")
 
     status = solver.Solve(model, solution_collector)
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE) and solution_collector.solutions:
@@ -106,41 +118,122 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
         print("❌ GĐ 1: Không tìm thấy pattern nào phù hợp.<br>")
         return None
 
-def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay):
+def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay, pattern_limit=None):
     """
     Kiểm tra xem có file cache cho bộ tham số này không.
     Nếu có, tải lại. Nếu không, chạy Giai đoạn 1 để tính toán và lưu lại.
+    
+    Args:
+        pattern_limit: Số lượng patterns tối đa (None = sử dụng SOLUTION_LIMIT)
     """
     cache_folder = "patterns_cache"
     os.makedirs(cache_folder, exist_ok=True)
-    # Cache key phụ thuộc vào thứ tự và giá trị của các đoạn cắt
-
-    params_string = f"{stock_length}-{tuple(piece_lengths)}-{kerf_width}-{max_waste_percentage}-{trim_start}"
+    
+    # Xác định giới hạn patterns TRƯỚC khi tạo hash
+    if pattern_limit is None:
+        limit = SOLUTION_LIMIT
+    else:
+        limit = pattern_limit
+    
+    # Cache key phụ thuộc vào thứ tự và giá trị của các đoạn cắt + pattern_limit
+    params_string = f"{stock_length}-{tuple(piece_lengths)}-{kerf_width}-{max_waste_percentage}-{trim_start}-{limit}"
     input_hash = hashlib.sha256(params_string.encode('utf-8')).hexdigest()[:16]
     
     filename = os.path.join(cache_folder, f"patterns_{input_hash}.pkl")
+    metadata_filename = filename.replace('.pkl', '_metadata.json')
+    
+    # Kiểm tra cache và metadata
     if os.path.exists(filename):
-        print(f"👍 GĐ 1: Đã tìm thấy file nghiệm '{filename}'. Đang tải lại...<br>")
-        with open(filename, 'rb') as f:
-            patterns = pickle.load(f)
-        # --- THÊM BƯỚC LỌC TẠI ĐÂY ---
-        # Lọc kết quả từ file cache nếu nó lớn hơn giới hạn cho phép
-        if len(patterns) > SOLUTION_LIMIT:
-            original_count = len(patterns)
-            # Vì các patterns đã được sắp xếp theo hao hụt khi lưu,
-            # lấy N hàng đầu tiên chính là lấy N patterns tốt nhất.
-            patterns = patterns.head(SOLUTION_LIMIT)
-            print(f"⚠️ File cache chứa {original_count:,} patterns, đã được lọc lại còn **{len(patterns):,} patterns tốt nhất**.<br>")
+        print(f"👍 GĐ 1: Đã tìm thấy file nghiệm '{filename}'. Đang kiểm tra...<br>")
         
-        print(f"✅ GĐ 1: Tải lại thành công! Sử dụng {len(patterns):,} patterns đã lưu.<br>")
-
-        return patterns
+        # Đọc metadata để kiểm tra số lượng patterns trong cache
+        cache_limit = None
+        if os.path.exists(metadata_filename):
+            try:
+                with open(metadata_filename, 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+                    cache_limit = metadata.get('limit_used', metadata.get('pattern_limit', None))
+                    cache_count = metadata.get('pattern_count', 0)
+                    print(f"📋 Metadata: Cache chứa {cache_count:,} patterns (limit: {cache_limit:,})<br>")
+            except Exception as e:
+                print(f"⚠️ Không đọc được metadata: {str(e)}<br>")
+        
+        # Kiểm tra xem cache có đủ patterns không
+        if cache_limit is not None and limit > cache_limit:
+            print(f"🔄 <b>Cache không đủ!</b> Bạn yêu cầu {limit:,} patterns nhưng cache chỉ có {cache_limit:,} patterns.<br>")
+            print(f"🚀 Đang chạy lại Phase 1 để tạo thêm patterns...<br>")
+            # Re-generate với giới hạn mới
+            patterns = find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay, pattern_limit=limit)
+            
+            if patterns is not None and not patterns.empty:
+                # Ghi đè cache cũ
+                with open(filename, 'wb') as f:
+                    pickle.dump(patterns, f)
+                print(f"💾 GĐ 1: Đã cập nhật cache với {len(patterns):,} patterns mới<br>")
+                
+                # Cập nhật metadata
+                new_metadata = {
+                    'stock_length': stock_length,
+                    'piece_lengths': piece_lengths,
+                    'kerf_width': kerf_width,
+                    'max_waste_percentage': max_waste_percentage,
+                    'trim_start': trim_start,
+                    'pattern_count': len(patterns),
+                    'input_hash': input_hash,
+                    'created_at': datetime.now().isoformat(),
+                    'pattern_limit': limit,
+                    'limit_used': limit
+                }
+                with open(metadata_filename, 'w', encoding='utf-8') as f:
+                    json.dump(new_metadata, f, indent=2, ensure_ascii=False)
+                print(f"📋 GĐ 1: Đã cập nhật metadata<br>")
+            return patterns
+        else:
+            # Cache đủ hoặc không cần kiểm tra, load cache
+            with open(filename, 'rb') as f:
+                patterns = pickle.load(f)
+            
+            # Lọc kết quả từ file cache nếu nó lớn hơn giới hạn cho phép
+            if len(patterns) > limit:
+                original_count = len(patterns)
+                # Vì các patterns đã được sắp xếp theo hao hụt khi lưu,
+                # lấy N hàng đầu tiên chính là lấy N patterns tốt nhất.
+                patterns = patterns.head(limit)
+                print(f"⚠️ File cache chứa {original_count:,} patterns, đã được lọc lại còn **{len(patterns):,} patterns tốt nhất**.<br>")
+            
+            # Tính và in % hao hụt thấp nhất và cao nhất của patterns đã load
+            min_waste_mm = patterns['Hao hụt (mm)'].min() / SCALING_FACTOR  # Chia lại SCALING_FACTOR
+            max_waste_mm = patterns['Hao hụt (mm)'].max() / SCALING_FACTOR  # Chia lại SCALING_FACTOR
+            min_waste_pct = (min_waste_mm / stock_length) * 100
+            max_waste_pct = (max_waste_mm / stock_length) * 100
+            print(f"📊 Hao hụt trong các patterns: <b>{min_waste_pct:.2f}%</b> ({min_waste_mm:.1f}mm) → <b>{max_waste_pct:.2f}%</b> ({max_waste_mm:.1f}mm)<br>")
+            
+            print(f"✅ GĐ 1: Tải lại thành công! Sử dụng {len(patterns):,} patterns đã lưu.<br>")
+            return patterns
     else:
-        patterns = find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay)
+        # Không có cache, tạo mới
+        patterns = find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay, pattern_limit=limit)
         if patterns is not None and not patterns.empty:
             with open(filename, 'wb') as f:
                 pickle.dump(patterns, f)
             print(f"💾 GĐ 1: Đã lưu bộ nghiệm mới vào file: '{filename}'<br>")
+            
+            # Lưu metadata kèm theo
+            metadata = {
+                'stock_length': stock_length,
+                'piece_lengths': piece_lengths,
+                'kerf_width': kerf_width,
+                'max_waste_percentage': max_waste_percentage,
+                'trim_start': trim_start,
+                'pattern_count': len(patterns),
+                'input_hash': input_hash,
+                'created_at': datetime.now().isoformat(),
+                'pattern_limit': limit,
+                'limit_used': limit
+            }
+            with open(metadata_filename, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, indent=2, ensure_ascii=False)
+            print(f"📋 GĐ 1: Đã lưu metadata ({len(patterns):,} patterns) vào: '{metadata_filename}'<br>")
         return patterns
 
 
@@ -148,7 +241,7 @@ def find_optimal_stock_length(piece_names, piece_lengths, demands_list, prioriti
                                max_surplus, use_priority_constraint, time_limit_seconds,
                                kerf_width=1, max_waste_percentage=0.01,
                                min_length=5000, max_length=6000, step=10, trim_start=10, doan_thua_cat_tay=0,
-                               max_total_surplus=None):
+                               max_total_surplus=None, pattern_limit=None, save_to_redis=True, stop_on_first=False):
     """
     Tìm chiều dài cây sắt tối ưu bằng cách chạy ĐẦY ĐỦ Phase 2 optimization cho mỗi chiều dài.
     
@@ -169,11 +262,38 @@ def find_optimal_stock_length(piece_names, piece_lengths, demands_list, prioriti
         trim_start: Hao hụt tề đầu
         doan_thua_cat_tay: Đoạn thừa cắt tay
         max_total_surplus: Tổng tồn kho tối đa cho tất cả các loại (None = không giới hạn)
+        pattern_limit: Số lượng patterns tối đa (None = sử dụng SOLUTION_LIMIT_QUICK_MODE)
+        stop_on_first: Nếu True, dừng ngay khi tìm thấy nghiệm khả thi đầu tiên
     
     Returns:
         tuple: (optimal_length, min_waste_percentage, best_result_dict)
     """
-    print("<br>=== BẮT ĐẦU TÌM CHIỀU DÀI CÂY SẮT TỐI ƯU (CHẾ ĐỘ ĐẦY ĐỦ) ===<br>")
+    # Xác định giới hạn patterns
+    if pattern_limit is None:
+        limit = SOLUTION_LIMIT_QUICK_MODE
+    else:
+        limit = pattern_limit
+    
+    quick_mode = (limit < SOLUTION_LIMIT)
+    
+    # Kết nối Redis để lưu kết quả
+    redis_client = None
+    session_key = None
+    if save_to_redis:
+        try:
+            redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+            redis_client.ping()
+            # Tạo session key duy nhất
+            session_key = f"optimization:{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            print(f"<b>💾 Redis:</b> Kết nối thành công, session key: {session_key}<br>")
+        except Exception as e:
+            print(f"<b>⚠️ Redis:</b> Không kết nối được ({str(e)}), tiếp tục không cache<br>")
+            redis_client = None
+    
+    print(f"<br>=== BẮT ĐẦU TÌM CHIỀU DÀI CÂY SẮT TỐI ƯU ===<br>")
+    print(f"<b>⚙️ Cài đặt:</b> Giới hạn {limit:,} patterns/test, bước nhảy {step}mm<br>")
+    if stop_on_first:
+        print(f"<b>🚨 Chế độ:</b> Dừng ngay khi tìm thấy nghiệm khả thi đầu tiên (🚀 Nhanh)<br>")
     print(f"Khoảng tìm kiếm: {min_length}mm - {max_length}mm (bước nhảy {step}mm)<br>")
     total_tests = (max_length - min_length) // step + 1
     print(f"<b>⚠️ CẢNH BÁO:</b> Sẽ chạy {total_tests} tests đầy đủ. Ước tính thời gian: ~{total_tests * time_limit_seconds * 3 / 3600:.1f} giờ<br>")
@@ -204,7 +324,7 @@ def find_optimal_stock_length(piece_names, piece_lengths, demands_list, prioriti
             
             # Tính toán patterns cho chiều dài này
             patterns_data = get_or_calculate_patterns(
-                test_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay
+                test_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay, pattern_limit=limit
             )
             
             if patterns_data is None or patterns_data.empty:
@@ -238,13 +358,83 @@ def find_optimal_stock_length(piece_names, piece_lengths, demands_list, prioriti
             # Lưu kết quả
             print(f"  ✅ Kết quả: {result['total_bars']} cây, hao hụt {result['waste_percentage']:.2f}%, tồn kho {result['total_surplus']} đoạn<br>")
             
-            results_summary.append({
+            result_data = {
                 'length': test_length,
                 'bars': result['total_bars'],
                 'waste_pct': result['waste_percentage'],
                 'total_surplus': result['total_surplus'],
                 'result': result
-            })
+            }
+            results_summary.append(result_data)
+            
+            # Lưu vào Redis
+            if redis_client and session_key:
+                try:
+                    # Lưu kết quả từng test
+                    redis_client.hset(
+                        f"{session_key}:results",
+                        str(test_length),
+                        json.dumps({
+                            'length': test_length,
+                            'bars': result['total_bars'],
+                            'waste_pct': result['waste_percentage'],
+                            'total_surplus': result['total_surplus'],
+                            'timestamp': datetime.now().isoformat()
+                        }, ensure_ascii=False)
+                    )
+                    # Cập nhật metadata
+                    redis_client.hset(
+                        f"{session_key}:meta",
+                        mapping={
+                            'last_test': str(test_length),
+                            'total_tests': str(test_count),
+                            'completed_tests': str(len(results_summary)),
+                            'last_update': datetime.now().isoformat()
+                        }
+                    )
+                    # Set TTL 7 ngày
+                    redis_client.expire(f"{session_key}:results", 7*24*3600)
+                    redis_client.expire(f"{session_key}:meta", 7*24*3600)
+                except Exception as e:
+                    print(f"  ⚠️ Lỗi lưu Redis: {str(e)}<br>")
+            
+            # Nếu bật stop_on_first và đã tìm thấy nghiệm khả thi, dừng ngay
+            if stop_on_first:
+                best_length = test_length
+                best_waste_percentage = result['waste_percentage']
+                best_total_bars = result['total_bars']
+                best_total_surplus = result['total_surplus']
+                best_result_dict = result
+                
+                print(f"<br>🚨 <b>DỮNG SỚẺM - ĐÃ TÌM THẤY NGHIỆM KHẢ THI ĐẦU TIÊN!</b><br>")
+                print(f"<b>Chiều dài:</b> {best_length}mm<br>")
+                print(f"<b>Số cây:</b> {best_total_bars} cây<br>")
+                print(f"<b>Hao hụt:</b> {best_waste_percentage:.2f}%<br>")
+                print(f"<b>Tồn kho:</b> {best_total_surplus} đoạn<br>")
+                print(f"<b>Tests completed:</b> {len(results_summary)}/{total_tests}<br><br>")
+                
+                # Lưu kết quả vào Redis
+                if redis_client and session_key:
+                    try:
+                        redis_client.hset(
+                            f"{session_key}:final",
+                            mapping={
+                                'optimal_length': str(best_length),
+                                'waste_percentage': str(best_waste_percentage),
+                                'total_bars': str(best_total_bars),
+                                'total_surplus': str(best_total_surplus),
+                                'completed_at': datetime.now().isoformat(),
+                                'total_tests': str(total_tests),
+                                'valid_results': str(len(results_summary)),
+                                'early_stop': 'true'
+                            }
+                        )
+                        redis_client.expire(f"{session_key}:final", 7*24*3600)
+                    except Exception as e:
+                        print(f"⚠️ Lỗi lưu kết quả: {str(e)}<br>")
+                
+                print(f"OPTIMAL_LENGTH::{best_length}")
+                return best_length, best_waste_percentage, best_result_dict
             
             # So sánh và cập nhật giải pháp tốt nhất
             # Priority 1: Waste percentage (với tolerance 0.01%)
@@ -318,6 +508,26 @@ def find_optimal_stock_length(piece_names, piece_lengths, demands_list, prioriti
         print(f"   - Hao hụt: {best_waste_percentage:.2f}%<br>")
         print(f"   - Tổng tồn kho: {best_total_surplus} đoạn<br><br>")
         
+        # Lưu kết quả cuối cùng vào Redis
+        if redis_client and session_key:
+            try:
+                redis_client.hset(
+                    f"{session_key}:final",
+                    mapping={
+                        'optimal_length': str(best_length),
+                        'waste_percentage': str(best_waste_percentage),
+                        'total_bars': str(best_total_bars),
+                        'total_surplus': str(best_total_surplus),
+                        'completed_at': datetime.now().isoformat(),
+                        'total_tests': str(total_tests),
+                        'valid_results': str(len(results_summary))
+                    }
+                )
+                redis_client.expire(f"{session_key}:final", 7*24*3600)
+                print(f"<b>💾 Redis:</b> Đã lưu kết quả cuối cùng vào key '{session_key}:final'<br>")
+            except Exception as e:
+                print(f"⚠️ Lỗi lưu kết quả cuối: {str(e)}<br>")
+        
         # Broadcast chiều dài tối ưu
         print(f"OPTIMAL_LENGTH::{best_length}")
         
@@ -388,7 +598,6 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
         patterns_df['Priority_Score'] = patterns_df.apply(calculate_priority_score, axis=1)
     else:
         print("--- Chế độ ưu tiên đang TẮT (chỉ tối ưu hao hụt và tồn kho) ---<br>")
-        print(f"Sử dụng toàn bộ {len(patterns_df)} patterns đã tìm thấy.<br>")
 
     # LOẠI BỎ CÁC PATTERNS KHÔNG THOẢ ĐIỀU KIỆN CẮT KẾT HỢP CẮT LASER VÀ TỰ ĐỘNG
     if any(is_doan_cuoi):   # NẾU CÓ ÍT NHẤT MỘT DẤU TICK
@@ -423,6 +632,16 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
     if len(patterns_df) == 0:
         print("❌ GĐ 2: Không có pattern nào để xử lý sau khi lọc.<br>")
         return
+    
+    # In ra số lượng patterns cuối cùng sau tất cả các bước lọc
+    print(f"<b>✅ Sử dụng {len(patterns_df):,} patterns cho Phase 2 Optimization</b><br>")
+    
+    # In ra % hao hụt thấp nhất và cao nhất của patterns đang sử dụng
+    min_waste_mm = patterns_df['Hao hụt (mm)'].min() / SCALING_FACTOR
+    max_waste_mm = patterns_df['Hao hụt (mm)'].max() / SCALING_FACTOR
+    min_waste_pct = (min_waste_mm / raw_stock_length) * 100
+    max_waste_pct = (max_waste_mm / raw_stock_length) * 100
+    print(f"📊 Hao hụt trong các patterns: <b>{min_waste_pct:.2f}%</b> ({min_waste_mm:.1f}mm) → <b>{max_waste_pct:.2f}%</b> ({max_waste_mm:.1f}mm)<br>")
 
     # Khai báo mô hình tối ưu hóa
     model = cp_model.CpModel()

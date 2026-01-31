@@ -48,7 +48,12 @@ def run_optimization(request):
             max_surplus = data.get('max_surplus')
             max_total_surplus = data.get('max_total_surplus')  # NEW: Tổng tồn kho tối đa
             use_priority_constraint = data.get('use_priority_constraint')
+            pattern_limit = data.get('pattern_limit', 100000)  # NEW: Giới hạn patterns cho mode bình thường
             optimize_stock_length = data.get('optimize_stock_length', False)
+            optimize_min_length = data.get('optimize_min_length', 5000)  # NEW: Chiều dài tối thiểu
+            optimize_max_length = data.get('optimize_max_length', 6000)  # NEW: Chiều dài tối đa
+            optimize_search_step = data.get('optimize_search_step', 10)  # NEW: Bước nhảy tùy chỉnh
+            optimize_stop_on_first = data.get('optimize_stop_on_first', False)  # NEW: Dừng ngay khi tìm thấy nghiệm
             # use_combined_mode = data.get('use_combined_mode')
             time_limit_minutes = data.get('time_limit_minutes')
             pieces_data = data.get('pieces_data')
@@ -93,12 +98,14 @@ def run_optimization(request):
                     time_limit_seconds=time_limit_minutes * 60,
                     kerf_width=1,
                     max_waste_percentage=max_waste_percentage,
-                    min_length=5000,
-                    max_length=6000,
-                    step=10,
+                    min_length=optimize_min_length,
+                    max_length=optimize_max_length,
+                    step=optimize_search_step,  # Sử dụng giá trị từ form
                     trim_start=10,
                     doan_thua_cat_tay=0,
-                    max_total_surplus=max_total_surplus  # NEW: Pass tổng tồn kho tối đa
+                    max_total_surplus=max_total_surplus,
+                    pattern_limit=pattern_limit,  # Dùng chung pattern_limit cho cả 2 mode
+                    stop_on_first=optimize_stop_on_first  # Dừng ngay khi tìm thấy nghiệm
                 )
                 
                 if optimal_length is None:
@@ -113,7 +120,7 @@ def run_optimization(request):
             
             # Chạy bình thường khi không dùng tìm kiếm tối ưu
             patterns_data = get_or_calculate_patterns(
-                stock_length, piece_lengths, 1, max_waste_percentage, 10, 0
+                stock_length, piece_lengths, 1, max_waste_percentage, 10, 0, pattern_limit=pattern_limit
             )
             
             if patterns_data is not None and not patterns_data.empty:

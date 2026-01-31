@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files với Daphne
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -155,3 +156,7 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# Timeout cho Daphne ASGI server (30 phút = 1800 giây)
+# Cho phép các tác vụ optimization chạy lâu không bị kill
+DAPHNE_REQUEST_TIMEOUT = 1800  # 30 phút
