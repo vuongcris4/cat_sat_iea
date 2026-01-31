@@ -524,7 +524,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             for r, fr in enumerate(pos_factors):
                 row[f'factor_{fr}'] = b_opt_row[r]
             
-            row['Tổng cây'] = total_bars_for_pattern
+            row['Tổng<br>cây'] = total_bars_for_pattern
             
             plan_data.append(row)
 
