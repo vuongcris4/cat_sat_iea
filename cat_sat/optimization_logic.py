@@ -518,7 +518,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
                 total_bars_for_pattern += fr * b_opt_row[r]
             
             row = {}
-            row['Hao hụt (mm)'] = pattern_waste
+            row['Hao hụt<br>(mm)'] = pattern_waste
             for i in range(m):
                 row[f'segment_{i}'] = pattern_solution[i]
             for r, fr in enumerate(pos_factors):
@@ -545,9 +545,9 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             # Sắp xếp cột
             piece_cols = list(rename_map.values())
             factor_cols = list(factor_rename_map.values())
-            other_cols = ['STT', 'Hao hụt (mm)']
+            other_cols = ['STT', 'Hao hụt<br>(mm)']
             # <<< FIX YÊU CẦU 2: ĐỊNH NGHĨA TÊN CỘT TỔNG >>>
-            total_col_name = 'Tổng cây'
+            total_col_name = 'Tổng<br>cây'
 
             # <-- LOGIC ẨN CỘT RỖNG -->
             active_factor_cols = []
@@ -567,16 +567,16 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             print(f"<h4>KẾ HOẠCH CẮT CHI TIẾT ({len(plan_df)} loại)</h4>")
             
             plan_styler = plan_df.style.set_properties(**{'text-align': 'center', 'font-size': '1.1rem'})
-            plan_styler.format({'Hao hụt (mm)': "{:,.1f}"})
+            plan_styler.format({'Hao hụt<br>(mm)': "{:,.1f}"})
 
             plan_styler.set_properties(**{'font-weight': 'bold'}, subset=piece_cols + active_factor_cols + [total_col_name]) # <-- Dùng active_factor_cols
             plan_styler.hide(axis="index")
             
             # Thêm viền đậm (giống cat_laser_roi)
             table_styles = []
-            # --- THÊM: TĂNG FONT HEADER (TH) + NOWRAP ---
+            # --- THÊM: TĂNG FONT + NOWRAP CHO TẤT CẢ Ô ---
             table_styles.append(
-                {'selector': 'th', 'props': [('font-size', '1.1rem'), ('white-space', 'nowrap')]}
+                {'selector': 'th, td', 'props': [('font-size', '1.1rem'), ('white-space', 'nowrap')]}
             )
             border_style = '2px solid black'
             
