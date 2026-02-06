@@ -51,8 +51,15 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
 
     # cây sắt - cùi sắt
     model.Add(total_material_used <= stock_length_int)
-    min_material_used = int((stock_length_int - trim_start_int) * (1 - max_waste_percentage))
-    model.Add(min_material_used <= total_material_used)
+    
+    # Hao hụt = phoi_cuoi + trim_start = (stock_length - total_material_used) + trim_start
+    # Hao hụt <= max_waste_percentage * stock_length
+    # => stock_length - total_material_used + trim_start <= max_waste_percentage * stock_length
+    # => total_material_used >= stock_length - max_waste_percentage * stock_length + trim_start
+    # => total_material_used >= stock_length * (1 - max_waste_percentage) + trim_start
+    max_waste_mm = int(stock_length_int * max_waste_percentage)  # Hao hụt tối đa cho phép (mm)
+    min_material_used = stock_length_int - max_waste_mm + trim_start_int
+    model.Add(total_material_used >= min_material_used)
 
     waste_var = model.NewIntVar(0, stock_length_int, 'waste')
     model.Add(waste_var == stock_length_int - total_material_used)  # Cui sat
