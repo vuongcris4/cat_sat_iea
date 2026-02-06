@@ -30,8 +30,9 @@ COPY . .
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Create data directories
-RUN mkdir -p /app/patterns_cache /app/data
+# Create data directories with proper permissions
+RUN mkdir -p /app/patterns_cache /app/data \
+    && chmod 777 /app/patterns_cache /app/data
 
 # Non-root user
 RUN adduser --disabled-password --gecos '' appuser \
