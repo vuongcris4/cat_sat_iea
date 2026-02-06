@@ -185,7 +185,7 @@ class SolutionAndLogCollector(cp_model.CpSolverSolutionCallback):
         self._cnt += 1
         if self._cnt % self._print_every == 0:
             hao_hut = self._length - obj_value
-            print(f"{x}, Hao hụt {hao_hut}/cây<br>")
+            print(f"{x}, HH {hao_hut}/cây<br>")
 
         # dừng sớm khi đủ số nghiệm mong muốn
         if len(self._solutions) >= self._accept_at_most:
