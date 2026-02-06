@@ -202,10 +202,9 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
     def _solve_single_bar_batch(self, max_solutions=1000, time_limit_sec=None):
         """
         Tạo mô hình thỏa mãn với ràng buộc:
-          - length*(1-0.01) <= sum(seg[i]*x_i) + blade_width * sum(x_i) <= length
-          - 0 <= x_i <= 30, integer
-        Dùng CpSolverSolutionCallback để duyệt nghiệm nhanh, lọc trùng bằng set.
-        Trả về list[(obj_value_mm, [x_i,...])], đã sort theo obj_value giảm dần.
+          - Cận trên = length - te_dau_sat
+          - Tổng sắt dùng = các đoạn + hao hụt lưỡi
+          - Hao hụt = length - tổng sắt dùng
         """
         print(f"Bắt đầu GĐ 1: Tìm các pattern (tối đa {max_solutions:,} phương án). Vui lòng chờ...<br>")
         model = cp_model.CpModel()
@@ -219,17 +218,20 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         seg_scaled = [int(round(s * scale)) for s in self.segment_sizes.tolist()]
         blade_scaled = int(round(self.blade_width * scale))
         length_scaled = int(round(self.length * scale))
-        te_scaled = int(round(self.te_dau_sat * scale))  # giữ để tham khảo, B1 không dùng
+        te_scaled = int(round(self.te_dau_sat * scale))
 
-        objective_scaled = cp_model.LinearExpr.Sum(
+        # Tổng sắt dùng = các đoạn + hao hụt lưỡi (KHÔNG tính te_dau_sat)
+        total_material_scaled = cp_model.LinearExpr.Sum(
             [seg_scaled[i] * vars_x[i] for i in range(n)]
         ) + blade_scaled * sum_x
 
-        # ràng buộc cửa sổ hao hụt (1% hao hụt tối thiểu)
-        lower = int(round(length_scaled * (1 - 0.01)))
-        upper = int(round(length_scaled))  # B1 giải full cây; tề đầu áp khi load cache
-        model.Add(objective_scaled >= lower)
-        model.Add(objective_scaled <= upper)
+        # Cận trên: tổng sắt dùng <= length - te_dau_sat
+        usable_length = length_scaled - te_scaled
+        model.Add(total_material_scaled <= usable_length)
+        
+        # Cận dưới: hao hụt tối đa 1% => total_material >= length * 0.99
+        min_material = int(round(length_scaled * 0.99))
+        model.Add(total_material_scaled >= min_material)
 
         # Bật enumerate all solutions (bài toán thỏa mãn)
         solver = cp_model.CpSolver()
