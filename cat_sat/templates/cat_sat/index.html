@@ -6,7 +6,7 @@
         <h2 class="text-primary" style="margin-top: 0;">Máy cắt tự động</h2>
         <form id="optimizationForm" method="post" novalidate>
             {% csrf_token %}
-            
+
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
@@ -162,49 +162,49 @@
         e.preventDefault();
         startButton.disabled = true;
         statusDisplay.innerText = "Đang xử lý...";
-        
+        logOutput.innerHTML = "";  // Xóa log cũ ngay khi bắt đầu
         const pieces_data = hot.getData().filter(row => row.some(cell => cell !== null && cell !== '' && cell !== undefined));
-        
+
         const payload = {
             length: parseInt(form.length.value),
             te_dau_sat: parseInt(form.te_dau_sat.value),
             blade_width: parseFloat(form.blade_width.value),
-            factors: form.factors.value, 
+            factors: form.factors.value,
             time_limit_minutes: parseInt(form.time_limit_minutes.value),
             max_manual_cuts: parseInt(form.max_manual_cuts.value),
             max_stock_over: parseInt(form.max_stock_over.value),
-            pieces_data: pieces_data 
+            pieces_data: pieces_data
         };
 
-        fetch("{% url 'cat_sat:optimize' %}", { 
+        fetch("{% url 'cat_sat:optimize' %}", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
             body: JSON.stringify(payload),
         })
-        .catch(error => {
-            console.error(error);
-            statusDisplay.innerText = "Đã xảy ra lỗi!";
-            logOutput.innerHTML += "Đã xảy ra lỗi khi gửi yêu cầu: " + error;
-        })
-        .finally(() => {
-            startButton.disabled = false;
-            statusDisplay.innerText = "";
-        });
+            .catch(error => {
+                console.error(error);
+                statusDisplay.innerText = "Đã xảy ra lỗi!";
+                logOutput.innerHTML += "Đã xảy ra lỗi khi gửi yêu cầu: " + error;
+            })
+            .finally(() => {
+                startButton.disabled = false;
+                statusDisplay.innerText = "";
+            });
     });
 
     // --- HÀM IN ---
     function printDiv() {
-        let divContents = document.getElementById("logs").innerHTML; 
-        
+        let divContents = document.getElementById("logs").innerHTML;
+
         const formDataPrint = {
-             length: form.length.value,
-             te_dau_sat: form.te_dau_sat.value,
-             blade_width: form.blade_width.value
+            length: form.length.value,
+            te_dau_sat: form.te_dau_sat.value,
+            blade_width: form.blade_width.value
         };
         const segment_sizes = hot.getData()
-                                 .map(row => row[1]) 
-                                 .filter(val => val !== null && val !== '')
-                                 .join(' ');
+            .map(row => row[1])
+            .filter(val => val !== null && val !== '')
+            .join(' ');
 
         let screenWidth = window.screen.width;
         let screenHeight = window.screen.height;
