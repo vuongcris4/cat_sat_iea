@@ -3,7 +3,7 @@ import json
 import threading
 import time
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -438,7 +438,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         # =================================================================
         
         # <-- THÊM THỜI GIAN VÀ THÔNG TIN CƠ BẢN -->
-        now = datetime.now()
+        tz_vn = timezone(timedelta(hours=7))  # Vietnam timezone UTC+7
+        now = datetime.now(tz_vn)
         print(f"<b>Thời gian: {now.strftime('%d/%m/%Y %H:%M:%S')}</b><br>")
         print(f"<b>Chiều dài cây sắt:</b> {self.length}mm, <b>Tề đầu:</b> {self.te_dau_sat}mm, <b>Lưỡi cắt:</b> {self.blade_width}mm<br>")
         # <-- THÊM HỆ SỐ BÓ SẮT -->
