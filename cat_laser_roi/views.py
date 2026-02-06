@@ -5,11 +5,20 @@ import json
 import sys
 import asyncio
 import time
+import logging
+from datetime import datetime
 
 from channels.layers import get_channel_layer
 from iea_project.consumers import LOG_HISTORY
 from .forms import OptimizationForm
 from .optimization_logic import get_or_calculate_patterns, solve_phase2, find_optimal_stock_length
+
+# Configure logging
+logger = logging.getLogger('cat_laser_roi')
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(asctime)s [CAT_LASER_ROI] %(levelname)s: %(message)s'))
+logger.addHandler(handler)
 
 class TeeStream:
     def __init__(self, websocket_room):
@@ -44,6 +53,12 @@ def run_optimization(request):
         room_name = "log_gurobi_solver_cat_laser_roi"
         try:
             sys.stdout = TeeStream(room_name)
+            
+            # === LOGGING USER REQUEST ===
+            logger.info("="*60)
+            logger.info(f"NEW OPTIMIZATION REQUEST at {datetime.now().isoformat()}")
+            logger.info(f"User: {request.user.username}")
+            logger.info("="*60)
             
             data = json.loads(request.body)
             stock_length = data.get('stock_length')
@@ -86,10 +101,24 @@ def run_optimization(request):
             priorities_list = [int(row[3]) if len(row) > 3 and row[3] is not None else 0 for row in valid_rows]
             is_doan_cuoi = [bool(row[4]) if len(row) > 4 and row[4] is not None else False for row in valid_rows]
 
-
+            # === LOGGING INPUT PARAMETERS ===
+            logger.info(f"Stock Length: {stock_length}mm")
+            logger.info(f"Max Waste %: {max_waste_percentage*100:.2f}%")
+            logger.info(f"Max Surplus per type: {max_surplus}")
+            logger.info(f"Max Total Surplus: {max_total_surplus}")
+            logger.info(f"Priority Constraint: {use_priority_constraint}")
+            logger.info(f"Pattern Limit: {pattern_limit}")
+            logger.info(f"Optimize Stock Length: {optimize_stock_length}")
+            logger.info(f"Time Limit: {time_limit_minutes} minutes")
+            logger.info(f"Number of piece types: {len(piece_names)}")
+            for i, (name, length, demand, priority, is_end) in enumerate(zip(piece_names, piece_lengths, demands_list, priorities_list, is_doan_cuoi)):
+                logger.info(f"  [{i+1}] {name}: {length}mm x {demand} pcs (priority={priority}, is_end={is_end})")
+            logger.info("-"*60)
 
             # Nếu bật tính năng tối ưu chiều dài cây sắt
             if optimize_stock_length:
+                logger.info("Starting OPTIMAL STOCK LENGTH SEARCH...")
+                logger.info(f"Search range: {optimize_min_length}mm - {optimize_max_length}mm (step={optimize_search_step})")
                 optimal_length, optimal_waste_pct, best_result = find_optimal_stock_length(
                     piece_names=piece_names,
                     piece_lengths=piece_lengths,
@@ -122,11 +151,14 @@ def run_optimization(request):
 
             
             # Chạy bình thường khi không dùng tìm kiếm tối ưu
+            logger.info("Starting Phase 1: Pattern Generation (Normal Mode)...")
             patterns_data = get_or_calculate_patterns(
                 stock_length, piece_lengths, 1, max_waste_percentage, 10, 0, pattern_limit=pattern_limit
             )
             
             if patterns_data is not None and not patterns_data.empty:
+                logger.info(f"Phase 1 complete. Found {len(patterns_data)} patterns.")
+                logger.info("Starting Phase 2: Distribution Optimization...")
                 solve_phase2(
                     stock_length,
                     patterns_data,
@@ -140,8 +172,13 @@ def run_optimization(request):
                     time_limit_seconds=time_limit_minutes * 60,
                     optimal_stock_info=None  # Không có optimal info khi chạy bình thường
                 )
+                logger.info("Phase 2 complete.")
+            else:
+                logger.warning("No patterns found from Phase 1!")
 
-            
+            logger.info("="*60)
+            logger.info("OPTIMIZATION COMPLETE")
+            logger.info("="*60)
             return JsonResponse({'status': 'success', 'message': 'Optimization process finished.'})
 
         except Exception as e:

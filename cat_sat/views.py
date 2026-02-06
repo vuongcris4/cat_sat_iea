@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 import json
+import logging
 from .forms import OptimizationForm
 from .optimization_logic import SteelCuttingOptimizer, SolverTimer
 import asyncio
@@ -10,6 +11,14 @@ from asgiref.sync import async_to_sync
 import os
 import sys
 import traceback
+from datetime import datetime
+
+# Configure logging
+logger = logging.getLogger('cat_sat')
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(asctime)s [CAT_SAT] %(levelname)s: %(message)s'))
+logger.addHandler(handler)
 
 class TeeStream:
     def __init__(self, websocket_room):
@@ -37,6 +46,12 @@ def optimize(request):
         original_stdout = sys.stdout
         try:
             sys.stdout = TeeStream("log_gurobi_solver_cat_sat")
+            
+            # === LOGGING USER REQUEST ===
+            logger.info("="*60)
+            logger.info(f"NEW OPTIMIZATION REQUEST at {datetime.now().isoformat()}")
+            logger.info(f"User: {request.user.username}")
+            logger.info("="*60)
             data = json.loads(request.body)
 
             time_limit_minutes = data.get('time_limit_minutes', 2)
@@ -69,6 +84,19 @@ def optimize(request):
                     factors = [1] 
                 # === KẾT THÚC THAY ĐỔI ===
 
+                # === LOGGING INPUT PARAMETERS ===
+                logger.info(f"Stock Length: {data['length']}mm")
+                logger.info(f"Te Dau Sat: {data['te_dau_sat']}mm")
+                logger.info(f"Blade Width: {data['blade_width']}mm")
+                logger.info(f"Max Manual Cuts: {data['max_manual_cuts']}")
+                logger.info(f"Max Stock Over: {data['max_stock_over']}")
+                logger.info(f"Time Limit: {time_limit_seconds}s")
+                logger.info(f"Factors: {factors}")
+                logger.info(f"Number of piece types: {len(piece_names)}")
+                for i, (name, size, demand) in enumerate(zip(piece_names, segment_sizes, demands)):
+                    logger.info(f"  [{i+1}] {name}: {size}mm x {demand} pcs")
+                logger.info("-"*60)
+
                 optimizer = SteelCuttingOptimizer(
                     length=int(data['length']),
                     te_dau_sat=int(data['te_dau_sat']),
@@ -82,11 +110,18 @@ def optimize(request):
                     time_limit_seconds=time_limit_seconds
                 )
 
+                logger.info("Starting Phase 1: Pattern Generation...")
                 solutions = optimizer.optimize_cutting()
+                logger.info(f"Phase 1 complete. Found {len(solutions) if solutions else 0} patterns.")
                 
+                logger.info("Starting Phase 2: Distribution Optimization...")
                 timer.start()
                 distribution = optimizer.optimize_distribution()
+                logger.info("Phase 2 complete.")
 
+                logger.info("="*60)
+                logger.info("OPTIMIZATION COMPLETE")
+                logger.info("="*60)
                 return JsonResponse({
                     "status": "success",
                     "solutions": solutions,
