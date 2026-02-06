@@ -25,54 +25,49 @@ SOLUTION_LIMIT_QUICK_MODE = 50000  # Giới hạn cho chế độ tìm chiều d
 def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay=0, pattern_limit=None):
     """
     Tìm tất cả các cách cắt (pattern) khả thi từ một cây sắt tiêu chuẩn.
-    Mỗi cách cắt phải thỏa mãn điều kiện về hao hụt tối đa cho phép.
+    
+    Logic đơn giản:
+    - Cận trên = chiều dài sắt - tề đầu sắt
+    - Tổng sắt dùng = các đoạn + hao hụt lưỡi cắt
+    - Hao hụt = chiều dài sắt - tổng sắt dùng
     
     Args:
         pattern_limit: Số lượng patterns tối đa (None = sử dụng SOLUTION_LIMIT)
     """
     print("⏳ Bắt đầu Giai đoạn 1: Tìm các phương án cắt hiệu quả...<br>")
 
-    # --- BẮT ĐẦU SỬA LỖI: Chuyển đổi tất cả sang số nguyên ---
+    # Chuyển đổi tất cả sang số nguyên (nhân SCALING_FACTOR)
     stock_length_int = int(stock_length * SCALING_FACTOR)
-    piece_lengths_int = [int(l * SCALING_FACTOR) for l in piece_lengths]    # KÍCH THƯỚC ĐOẠN
+    piece_lengths_int = [int(l * SCALING_FACTOR) for l in piece_lengths]
     kerf_width_int = int(kerf_width * SCALING_FACTOR)
     trim_start_int = int(trim_start * SCALING_FACTOR)
-    # --- KẾT THÚC SỬA LỖI ---
-
 
     model = cp_model.CpModel()
     num_pieces = len(piece_lengths_int)
-    counts = [model.NewIntVar(0, 30, f'segment_{i}') for i in range(num_pieces)]    # NGHIỆM THỨ 0, 1, 2, 3,... (tránh lỗi khi bị trùng kích thước)
+    counts = [model.NewIntVar(0, 30, f'segment_{i}') for i in range(num_pieces)]
 
+    # Tổng chiều dài các đoạn cắt
     total_pieces_length = sum(counts[i] * piece_lengths_int[i] for i in range(num_pieces))
-
-    total_kerf_loss = sum(counts) * kerf_width_int
-    total_material_used = total_pieces_length + total_kerf_loss + trim_start_int    # tổng các đoạn + tổng lưỡi mài + tề đầu
-
-    # cây sắt - cùi sắt
-    model.Add(total_material_used <= stock_length_int)
     
-    # Hao hụt = phoi_cuoi + trim_start = (stock_length - total_material_used) + trim_start
-    # Hao hụt <= max_waste_percentage * stock_length
+    # Tổng hao hụt lưỡi cắt
+    total_kerf_loss = sum(counts) * kerf_width_int
+    
+    # Tổng sắt dùng = các đoạn + hao hụt lưỡi (KHÔNG tính trim_start)
+    total_material_used = total_pieces_length + total_kerf_loss
 
+    # Cận trên: tổng sắt dùng <= chiều dài sắt - tề đầu sắt
+    usable_length = stock_length_int - trim_start_int
+    model.Add(total_material_used <= usable_length)
+    
+    # Cận dưới: dựa trên max_waste_percentage (hao hụt tối đa cho phép)
+    # Hao hụt = stock_length - total_material_used
+    # => total_material_used >= stock_length * (1 - max_waste_percentage)
     min_material_used = int(stock_length_int * (1 - max_waste_percentage))
-    model.Add(min_material_used <= total_material_used)
-
-    waste_var = model.NewIntVar(0, stock_length_int, 'waste')
-    model.Add(waste_var == stock_length_int - total_material_used)  # Cui sat
-
-    # Cach viet chon 1 trong 2 phuong an
-    # Nhu phuong an cu la hao hut = 3 hoac >= 10, -> thi trim_start=3, doan_thua_cat_tay=7
-    # Sau do sua lai hao hut luon >= 10, -> trim_start = 10, doan_thua_cat_tay =0
-    # is_waste_zero = model.NewBoolVar('is_waste_zero') 
-    # model.Add(waste_var == 0).OnlyEnforceIf(is_waste_zero) # Hao hut bang 0 vi da + trim start o material used
-    # model.Add(waste_var >= doan_thua_cat_tay).OnlyEnforceIf(is_waste_zero.Not())    # tang buoc cui sat phai lon hon trim_start
-    model.Add(waste_var >= 0)   # Vì đã cộng hao hụt tề đầu trim_start
+    model.Add(total_material_used >= min_material_used)
 
     solver = cp_model.CpSolver()
     solver.log_search_progress = False
     
-    # --- SỬA ĐỔI: Cập nhật lớp callback để dừng khi đạt giới hạn ---
     class SolutionAndLogCollector(cp_model.CpSolverSolutionCallback):
         def __init__(self, variables, limit):
             cp_model.CpSolverSolutionCallback.__init__(self)
@@ -81,7 +76,6 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
             self.solutions = []
 
         def on_solution_callback(self):
-            # Dừng tìm kiếm nếu đã đạt giới hạn
             if len(self.solutions) >= self.__solution_limit:
                 self.StopSearch()
                 return
@@ -89,12 +83,8 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
             solution = {v.Name(): self.Value(v) for v in self.__variables}
             self.solutions.append(solution)
             
-    # --- SỬA ĐỔI: Truyền giới hạn vào khi khởi tạo ---
     # Sử dụng giới hạn từ user input hoặc mặc định
-    if pattern_limit is None:
-        limit = SOLUTION_LIMIT
-    else:
-        limit = pattern_limit
+    limit = pattern_limit if pattern_limit is not None else SOLUTION_LIMIT
     
     solution_collector = SolutionAndLogCollector(counts, limit)
     solver.parameters.enumerate_all_solutions = True
@@ -106,17 +96,21 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
         print(f"✅ GĐ 1: Tính toán thành công, tìm thấy {len(solution_collector.solutions)} patterns hiệu quả.<br>")
         df_patterns = pd.DataFrame(solution_collector.solutions)
         
-        segment_cols = [f'segment_{i}' for i in range(num_pieces)]  # HÀNG HEADER
-        df_patterns['Tong_SL_Doan'] = df_patterns[segment_cols].sum(axis=1)    # TỔNG SỐ LƯỢNG ĐOẠN TỪNG HÀNG, để tính hao hụt tia laser
+        segment_cols = [f'segment_{i}' for i in range(num_pieces)]
         
+        # Tính tổng số lượng đoạn mỗi pattern
+        df_patterns['Tong_SL_Doan'] = df_patterns[segment_cols].sum(axis=1)
+        
+        # Tính tổng chiều dài các đoạn
         df_patterns['Tong_Dai_Doan'] = 0
         for i in range(num_pieces):
-            length = piece_lengths_int[i]
-            df_patterns['Tong_Dai_Doan'] += df_patterns[f'segment_{i}'] * length
+            df_patterns['Tong_Dai_Doan'] += df_patterns[f'segment_{i}'] * piece_lengths_int[i]
 
-        df_patterns['Tong_Cat'] = df_patterns['Tong_Dai_Doan'] + (df_patterns['Tong_SL_Doan'] * kerf_width_int) + trim_start_int
-        phoi_cuoi_cung = stock_length_int - df_patterns['Tong_Cat']
-        df_patterns['Hao hụt (mm)'] = phoi_cuoi_cung + trim_start_int
+        # Tổng sắt dùng = các đoạn + hao hụt lưỡi (KHÔNG tính trim_start)
+        df_patterns['Tong_Material'] = df_patterns['Tong_Dai_Doan'] + (df_patterns['Tong_SL_Doan'] * kerf_width_int)
+        
+        # Hao hụt = chiều dài sắt - tổng sắt dùng
+        df_patterns['Hao hụt (mm)'] = stock_length_int - df_patterns['Tong_Material']
 
         ordered_columns = segment_cols + ['Hao hụt (mm)']
         return df_patterns[ordered_columns].sort_values(by='Hao hụt (mm)')
