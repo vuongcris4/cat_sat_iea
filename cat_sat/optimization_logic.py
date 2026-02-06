@@ -84,6 +84,7 @@ class SteelCuttingOptimizer:
             "length": int(self.length),
             "segment_sizes": list(map(float, self.segment_sizes.tolist())),
             "blade_width": float(self.blade_width),
+            "te_dau_sat": float(self.te_dau_sat),  # Thêm tề đầu sắt vào cache key
         }
         return PatternCache.generate_cache_key(payload, use_md5=True)
 
@@ -95,6 +96,7 @@ class SteelCuttingOptimizer:
             "length": self.length,
             "segment_sizes": list(map(float, self.segment_sizes.tolist())),
             "blade_width": self.blade_width,
+            "te_dau_sat": self.te_dau_sat,  # Thêm tề đầu sắt vào metadata
         }
         self._cache.save(key, self.solutions, metadata)
 
