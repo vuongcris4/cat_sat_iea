@@ -34,6 +34,7 @@ services:
       # Persist data outside container
       - ./data/patterns_cache:/app/patterns_cache
       - ./data/db.sqlite3:/app/db.sqlite3
+      - ./data/logs:/app/logs  # Persistent logs
     depends_on:
       - redis
     networks:

@@ -3,22 +3,38 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 import json
 import logging
+from logging.handlers import RotatingFileHandler
+import os
 from .forms import OptimizationForm
 from .optimization_logic import SteelCuttingOptimizer, SolverTimer
 import asyncio
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-import os
 import sys
 import traceback
 from datetime import datetime
 
-# Configure logging
+# Configure logging với file storage
+LOG_DIR = '/app/logs'
+os.makedirs(LOG_DIR, exist_ok=True)
+
 logger = logging.getLogger('cat_sat')
 logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter('%(asctime)s [CAT_SAT] %(levelname)s: %(message)s'))
-logger.addHandler(handler)
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter('%(asctime)s [CAT_SAT] %(levelname)s: %(message)s'))
+logger.addHandler(console_handler)
+
+# File handler với rotation (10MB per file, giữ 5 files)
+file_handler = RotatingFileHandler(
+    os.path.join(LOG_DIR, 'cat_sat.log'),
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setFormatter(logging.Formatter('%(asctime)s [CAT_SAT] %(levelname)s: %(message)s'))
+logger.addHandler(file_handler)
 
 class TeeStream:
     def __init__(self, websocket_room):

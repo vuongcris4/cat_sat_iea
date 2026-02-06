@@ -6,6 +6,8 @@ import sys
 import asyncio
 import time
 import logging
+from logging.handlers import RotatingFileHandler
+import os
 from datetime import datetime
 
 from channels.layers import get_channel_layer
@@ -13,12 +15,27 @@ from iea_project.consumers import LOG_HISTORY
 from .forms import OptimizationForm
 from .optimization_logic import get_or_calculate_patterns, solve_phase2, find_optimal_stock_length
 
-# Configure logging
+# Configure logging với file storage
+LOG_DIR = '/app/logs'
+os.makedirs(LOG_DIR, exist_ok=True)
+
 logger = logging.getLogger('cat_laser_roi')
 logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter('%(asctime)s [CAT_LASER_ROI] %(levelname)s: %(message)s'))
-logger.addHandler(handler)
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter('%(asctime)s [CAT_LASER_ROI] %(levelname)s: %(message)s'))
+logger.addHandler(console_handler)
+
+# File handler với rotation (10MB per file, giữ 5 files)
+file_handler = RotatingFileHandler(
+    os.path.join(LOG_DIR, 'cat_laser_roi.log'),
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setFormatter(logging.Formatter('%(asctime)s [CAT_LASER_ROI] %(levelname)s: %(message)s'))
+logger.addHandler(file_handler)
 
 class TeeStream:
     def __init__(self, websocket_room):
