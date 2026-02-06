@@ -31,10 +31,9 @@ COPY . .
 RUN python manage.py collectstatic --noinput
 
 # Create data directories with proper permissions
-RUN mkdir -p /app/patterns_cache /app/data \
-    && chmod 777 /app/patterns_cache /app/data
+RUN mkdir -p /app/patterns_cache /app/data
 
-# Non-root user
+# Non-root user - create and set ownership AFTER directories
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser:appuser /app
 USER appuser
