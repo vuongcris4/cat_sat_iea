@@ -279,8 +279,13 @@ form input[type="number"]:focus, form input[type="text"]:focus {
 }
 
 /* Ensure Handsontable is responsive */
-.ht_master, .ht_clone_left, .ht_clone_top, .ht_clone_top_left_corner {
+/* Only master table should show scrollbar, clone layers (row headers, frozen columns) should hide scrollbar */
+.ht_master {
     overflow-x: auto !important;
+}
+
+.ht_clone_left, .ht_clone_top, .ht_clone_top_left_corner {
+    overflow: hidden !important;
 }
 
 #handsontable-container {

@@ -26,3 +26,225 @@
 2026-02-06 04:37:17,082 [CAT_LASER_ROI] INFO: ============================================================
 2026-02-06 04:37:17,082 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
 2026-02-06 04:37:17,082 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:52:53,707 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:52:53,708 [CAT_LASER_ROI] INFO: NEW OPTIMIZATION REQUEST at 2026-02-06T06:52:53.708179
+2026-02-06 06:52:53,708 [CAT_LASER_ROI] INFO: User: ketoan
+2026-02-06 06:52:53,708 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:52:53,708 [CAT_LASER_ROI] INFO: Stock Length: 6000mm
+2026-02-06 06:52:53,708 [CAT_LASER_ROI] INFO: Max Waste %: 1.00%
+2026-02-06 06:52:53,708 [CAT_LASER_ROI] INFO: Max Surplus per type: 10
+2026-02-06 06:52:53,708 [CAT_LASER_ROI] INFO: Max Total Surplus: 1000
+2026-02-06 06:52:53,708 [CAT_LASER_ROI] INFO: Priority Constraint: False
+2026-02-06 06:52:53,708 [CAT_LASER_ROI] INFO: Pattern Limit: 100000
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO: Optimize Stock Length: False
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO: Time Limit: 2 minutes
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO: Number of piece types: 5
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO:   [1] V15 (1 tán.2 dập. 1 tán. ko) mê ghép: 1752.2mm x 3200 pcs (priority=0, is_end=False)
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO:   [2] V15 (2 dập. 1 dập. 2 dập. Ko) hông ghế: 1684.4mm x 1600 pcs (priority=0, is_end=False)
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO:   [3] V 15 ( 2 tán*2. ko) bạ tay thường: 1289.2mm x 3200 pcs (priority=0, is_end=False)
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO:   [4] V15 (2 tán. 2 tán nch. 2 tán) bạ mê ghép: 1770.8mm x 3200 pcs (priority=0, is_end=False)
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO:   [5] V15 ( 2 tán *1, 2 tán*1): 565.0mm x 1600 pcs (priority=0, is_end=True)
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO: ------------------------------------------------------------
+2026-02-06 06:52:53,709 [CAT_LASER_ROI] INFO: Starting Phase 1: Pattern Generation (Normal Mode)...
+2026-02-06 06:52:53,729 [CAT_LASER_ROI] INFO: Phase 1 complete. Found 5 patterns.
+2026-02-06 06:52:53,729 [CAT_LASER_ROI] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-06 06:52:54,756 [CAT_LASER_ROI] INFO: Phase 2 complete.
+2026-02-06 06:52:54,756 [CAT_LASER_ROI] WARNING: Optimization failed - no result returned
+2026-02-06 06:52:54,757 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:52:54,757 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
+2026-02-06 06:52:54,757 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:05,441 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:05,441 [CAT_LASER_ROI] INFO: NEW OPTIMIZATION REQUEST at 2026-02-06T06:53:05.441547
+2026-02-06 06:53:05,441 [CAT_LASER_ROI] INFO: User: ketoan
+2026-02-06 06:53:05,441 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:05,441 [CAT_LASER_ROI] INFO: Stock Length: 6000mm
+2026-02-06 06:53:05,441 [CAT_LASER_ROI] INFO: Max Waste %: 1.00%
+2026-02-06 06:53:05,441 [CAT_LASER_ROI] INFO: Max Surplus per type: 10
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO: Max Total Surplus: 1000
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO: Priority Constraint: False
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO: Pattern Limit: 100000
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO: Optimize Stock Length: False
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO: Time Limit: 2 minutes
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO: Number of piece types: 5
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO:   [1] V15 (1 tán.2 dập. 1 tán. ko) mê ghép: 1752.2mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO:   [2] V15 (2 dập. 1 dập. 2 dập. Ko) hông ghế: 1684.4mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO:   [3] V 15 ( 2 tán*2. ko) bạ tay thường: 1289.2mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO:   [4] V15 (2 tán. 2 tán nch. 2 tán) bạ mê ghép: 1770.8mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO:   [5] V15 ( 2 tán *1, 2 tán*1): 565.0mm x 600 pcs (priority=0, is_end=True)
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO: ------------------------------------------------------------
+2026-02-06 06:53:05,442 [CAT_LASER_ROI] INFO: Starting Phase 1: Pattern Generation (Normal Mode)...
+2026-02-06 06:53:05,455 [CAT_LASER_ROI] INFO: Phase 1 complete. Found 5 patterns.
+2026-02-06 06:53:05,455 [CAT_LASER_ROI] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-06 06:53:06,478 [CAT_LASER_ROI] INFO: Phase 2 complete.
+2026-02-06 06:53:06,478 [CAT_LASER_ROI] WARNING: Optimization failed - no result returned
+2026-02-06 06:53:06,478 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:06,478 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
+2026-02-06 06:53:06,478 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:08,952 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: NEW OPTIMIZATION REQUEST at 2026-02-06T06:53:08.953173
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: User: ketoan
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: Stock Length: 6000mm
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: Max Waste %: 1.00%
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: Max Surplus per type: 10
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: Max Total Surplus: 1000
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: Priority Constraint: False
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: Pattern Limit: 100000
+2026-02-06 06:53:08,953 [CAT_LASER_ROI] INFO: Optimize Stock Length: False
+2026-02-06 06:53:08,954 [CAT_LASER_ROI] INFO: Time Limit: 2 minutes
+2026-02-06 06:53:08,954 [CAT_LASER_ROI] INFO: Number of piece types: 5
+2026-02-06 06:53:08,954 [CAT_LASER_ROI] INFO:   [1] V15 (1 tán.2 dập. 1 tán. ko) mê ghép: 1752.2mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:53:08,954 [CAT_LASER_ROI] INFO:   [2] V15 (2 dập. 1 dập. 2 dập. Ko) hông ghế: 1684.4mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:53:08,954 [CAT_LASER_ROI] INFO:   [3] V 15 ( 2 tán*2. ko) bạ tay thường: 1289.2mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:53:08,954 [CAT_LASER_ROI] INFO:   [4] V15 (2 tán. 2 tán nch. 2 tán) bạ mê ghép: 1770.8mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:53:08,954 [CAT_LASER_ROI] INFO:   [5] V15 ( 2 tán *1, 2 tán*1): 565.0mm x 600 pcs (priority=0, is_end=True)
+2026-02-06 06:53:08,954 [CAT_LASER_ROI] INFO: ------------------------------------------------------------
+2026-02-06 06:53:08,954 [CAT_LASER_ROI] INFO: Starting Phase 1: Pattern Generation (Normal Mode)...
+2026-02-06 06:53:08,970 [CAT_LASER_ROI] INFO: Phase 1 complete. Found 5 patterns.
+2026-02-06 06:53:08,970 [CAT_LASER_ROI] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-06 06:53:09,998 [CAT_LASER_ROI] INFO: Phase 2 complete.
+2026-02-06 06:53:09,998 [CAT_LASER_ROI] WARNING: Optimization failed - no result returned
+2026-02-06 06:53:09,998 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:09,998 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
+2026-02-06 06:53:09,998 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:30,377 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:30,377 [CAT_LASER_ROI] INFO: NEW OPTIMIZATION REQUEST at 2026-02-06T06:53:30.377857
+2026-02-06 06:53:30,377 [CAT_LASER_ROI] INFO: User: ketoan
+2026-02-06 06:53:30,377 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Stock Length: 6000mm
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Max Waste %: 1.00%
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Max Surplus per type: 10
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Max Total Surplus: 1000
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Priority Constraint: False
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Pattern Limit: 100000
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Optimize Stock Length: False
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Time Limit: 2 minutes
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Number of piece types: 5
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO:   [1] V15 (1 tán.2 dập. 1 tán. ko) mê ghép: 1752.2mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO:   [2] V15 (2 dập. 1 dập. 2 dập. Ko) hông ghế: 1684.4mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO:   [3] V 15 ( 2 tán*2. ko) bạ tay thường: 1289.2mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO:   [4] V15 (2 tán. 2 tán nch. 2 tán) bạ mê ghép: 1770.8mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO:   [5] V15 ( 2 tán *1, 2 tán*1): 565.0mm x 600 pcs (priority=0, is_end=True)
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: ------------------------------------------------------------
+2026-02-06 06:53:30,378 [CAT_LASER_ROI] INFO: Starting Phase 1: Pattern Generation (Normal Mode)...
+2026-02-06 06:53:30,393 [CAT_LASER_ROI] INFO: Phase 1 complete. Found 5 patterns.
+2026-02-06 06:53:30,394 [CAT_LASER_ROI] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-06 06:53:31,424 [CAT_LASER_ROI] INFO: Phase 2 complete.
+2026-02-06 06:53:31,424 [CAT_LASER_ROI] WARNING: Optimization failed - no result returned
+2026-02-06 06:53:31,424 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:31,424 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
+2026-02-06 06:53:31,424 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: NEW OPTIMIZATION REQUEST at 2026-02-06T06:53:44.512292
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: User: ketoan
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: Stock Length: 6000mm
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: Max Waste %: 1.00%
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: Max Surplus per type: 10
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: Max Total Surplus: 1000
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: Priority Constraint: False
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: Pattern Limit: 100000
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: Optimize Stock Length: False
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: Time Limit: 2 minutes
+2026-02-06 06:53:44,512 [CAT_LASER_ROI] INFO: Number of piece types: 6
+2026-02-06 06:53:44,513 [CAT_LASER_ROI] INFO:   [1] V15 (1 tán.2 dập. 1 tán. ko) mê ghép: 1752.2mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:53:44,513 [CAT_LASER_ROI] INFO:   [2] V15 (2 dập. 1 dập. 2 dập. Ko) hông ghế: 1684.4mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:53:44,513 [CAT_LASER_ROI] INFO:   [3] V 15 ( 2 tán*2. ko) bạ tay thường: 1289.2mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:53:44,513 [CAT_LASER_ROI] INFO:   [4] V15 (2 tán. 2 tán nch. 2 tán) bạ mê ghép: 1770.8mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:53:44,513 [CAT_LASER_ROI] INFO:   [5] V15 ( 2 tán *1, 2 tán*1): 565.0mm x 600 pcs (priority=0, is_end=True)
+2026-02-06 06:53:44,513 [CAT_LASER_ROI] INFO:   [6] v15: 445.0mm x 50 pcs (priority=0, is_end=False)
+2026-02-06 06:53:44,513 [CAT_LASER_ROI] INFO: ------------------------------------------------------------
+2026-02-06 06:53:44,513 [CAT_LASER_ROI] INFO: Starting Phase 1: Pattern Generation (Normal Mode)...
+2026-02-06 06:53:44,534 [CAT_LASER_ROI] INFO: Phase 1 complete. Found 14 patterns.
+2026-02-06 06:53:44,534 [CAT_LASER_ROI] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-06 06:53:45,560 [CAT_LASER_ROI] INFO: Phase 2 complete.
+2026-02-06 06:53:45,560 [CAT_LASER_ROI] WARNING: Optimization failed - no result returned
+2026-02-06 06:53:45,560 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:53:45,560 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
+2026-02-06 06:53:45,560 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:02,986 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:02,986 [CAT_LASER_ROI] INFO: NEW OPTIMIZATION REQUEST at 2026-02-06T06:54:02.986694
+2026-02-06 06:54:02,986 [CAT_LASER_ROI] INFO: User: ketoan
+2026-02-06 06:54:02,986 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:02,986 [CAT_LASER_ROI] INFO: Stock Length: 6000mm
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO: Max Waste %: 1.00%
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO: Max Surplus per type: 10
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO: Max Total Surplus: 1000
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO: Priority Constraint: False
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO: Pattern Limit: 100000
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO: Optimize Stock Length: False
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO: Time Limit: 2 minutes
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO: Number of piece types: 6
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO:   [1] V15 (1 tán.2 dập. 1 tán. ko) mê ghép: 1752.2mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO:   [2] V15 (2 dập. 1 dập. 2 dập. Ko) hông ghế: 1684.4mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO:   [3] V 15 ( 2 tán*2. ko) bạ tay thường: 1289.2mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO:   [4] V15 (2 tán. 2 tán nch. 2 tán) bạ mê ghép: 1770.8mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:54:02,987 [CAT_LASER_ROI] INFO:   [5] V15 ( 2 tán *1, 2 tán*1): 565.0mm x 600 pcs (priority=0, is_end=True)
+2026-02-06 06:54:02,988 [CAT_LASER_ROI] INFO:   [6] v15: 45.0mm x 100 pcs (priority=0, is_end=False)
+2026-02-06 06:54:02,988 [CAT_LASER_ROI] INFO: ------------------------------------------------------------
+2026-02-06 06:54:02,988 [CAT_LASER_ROI] INFO: Starting Phase 1: Pattern Generation (Normal Mode)...
+2026-02-06 06:54:03,004 [CAT_LASER_ROI] INFO: Phase 1 complete. Found 103 patterns.
+2026-02-06 06:54:03,004 [CAT_LASER_ROI] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-06 06:54:04,034 [CAT_LASER_ROI] INFO: Phase 2 complete.
+2026-02-06 06:54:04,035 [CAT_LASER_ROI] WARNING: Optimization failed - no result returned
+2026-02-06 06:54:04,035 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:04,035 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
+2026-02-06 06:54:04,035 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:18,642 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:18,642 [CAT_LASER_ROI] INFO: NEW OPTIMIZATION REQUEST at 2026-02-06T06:54:18.642924
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: User: ketoan
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: Stock Length: 6000mm
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: Max Waste %: 1.00%
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: Max Surplus per type: 10
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: Max Total Surplus: 1000
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: Priority Constraint: False
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: Pattern Limit: 100000
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: Optimize Stock Length: False
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: Time Limit: 2 minutes
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO: Number of piece types: 7
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO:   [1] V15 (1 tán.2 dập. 1 tán. ko) mê ghép: 1752.2mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO:   [2] V15 (2 dập. 1 dập. 2 dập. Ko) hông ghế: 1684.4mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:54:18,643 [CAT_LASER_ROI] INFO:   [3] V 15 ( 2 tán*2. ko) bạ tay thường: 1289.2mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:54:18,644 [CAT_LASER_ROI] INFO:   [4] V15 (2 tán. 2 tán nch. 2 tán) bạ mê ghép: 1770.8mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:54:18,644 [CAT_LASER_ROI] INFO:   [5] V15 ( 2 tán *1, 2 tán*1): 565.0mm x 600 pcs (priority=0, is_end=True)
+2026-02-06 06:54:18,644 [CAT_LASER_ROI] INFO:   [6] v15: 45.0mm x 500 pcs (priority=0, is_end=False)
+2026-02-06 06:54:18,644 [CAT_LASER_ROI] INFO:   [7] v15: 445.0mm x 50 pcs (priority=0, is_end=False)
+2026-02-06 06:54:18,644 [CAT_LASER_ROI] INFO: ------------------------------------------------------------
+2026-02-06 06:54:18,644 [CAT_LASER_ROI] INFO: Starting Phase 1: Pattern Generation (Normal Mode)...
+2026-02-06 06:54:18,666 [CAT_LASER_ROI] INFO: Phase 1 complete. Found 407 patterns.
+2026-02-06 06:54:18,666 [CAT_LASER_ROI] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-06 06:54:19,726 [CAT_LASER_ROI] INFO: Phase 2 complete.
+2026-02-06 06:54:19,726 [CAT_LASER_ROI] WARNING: Optimization failed - no result returned
+2026-02-06 06:54:19,726 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:19,726 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
+2026-02-06 06:54:19,726 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: NEW OPTIMIZATION REQUEST at 2026-02-06T06:54:23.545145
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: User: ketoan
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Stock Length: 6000mm
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Max Waste %: 1.00%
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Max Surplus per type: 10
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Max Total Surplus: 1000
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Priority Constraint: False
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Pattern Limit: 100000
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Optimize Stock Length: False
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Time Limit: 2 minutes
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Number of piece types: 7
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO:   [1] V15 (1 tán.2 dập. 1 tán. ko) mê ghép: 1752.2mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO:   [2] V15 (2 dập. 1 dập. 2 dập. Ko) hông ghế: 1684.4mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO:   [3] V 15 ( 2 tán*2. ko) bạ tay thường: 1289.2mm x 600 pcs (priority=0, is_end=False)
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO:   [4] V15 (2 tán. 2 tán nch. 2 tán) bạ mê ghép: 1770.8mm x 300 pcs (priority=0, is_end=False)
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO:   [5] V15 ( 2 tán *1, 2 tán*1): 565.0mm x 600 pcs (priority=0, is_end=True)
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO:   [6] v15: 45.0mm x 500 pcs (priority=0, is_end=False)
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO:   [7] v15: 445.0mm x 100 pcs (priority=0, is_end=False)
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: ------------------------------------------------------------
+2026-02-06 06:54:23,545 [CAT_LASER_ROI] INFO: Starting Phase 1: Pattern Generation (Normal Mode)...
+2026-02-06 06:54:23,556 [CAT_LASER_ROI] INFO: Phase 1 complete. Found 407 patterns.
+2026-02-06 06:54:23,557 [CAT_LASER_ROI] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-06 06:54:24,602 [CAT_LASER_ROI] INFO: Phase 2 complete.
+2026-02-06 06:54:24,602 [CAT_LASER_ROI] WARNING: Optimization failed - no result returned
+2026-02-06 06:54:24,602 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 06:54:24,603 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
+2026-02-06 06:54:24,603 [CAT_LASER_ROI] INFO: ============================================================
