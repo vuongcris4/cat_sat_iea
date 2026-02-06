@@ -111,12 +111,12 @@ def run_optimization(request):
                 print("❌ Không có dữ liệu hợp lệ. Vui lòng kiểm tra lại bảng dữ liệu.<br>")
                 return JsonResponse({'status': 'error', 'message': 'Không có dữ liệu đoạn cắt hợp lệ.'}, status=400)
             
-            # Parse dữ liệu từ các hàng hợp lệ
+            # Parse dữ liệu từ các hàng hợp lệ (New format: 4 columns without Priority)
             piece_names = [str(row[0]) for row in valid_rows]
             piece_lengths = [float(row[1]) for row in valid_rows]
             demands_list = [int(row[2]) for row in valid_rows]
-            priorities_list = [int(row[3]) if len(row) > 3 and row[3] is not None else 0 for row in valid_rows]
-            is_doan_cuoi = [bool(row[4]) if len(row) > 4 and row[4] is not None else False for row in valid_rows]
+            priorities_list = [0 for _ in valid_rows]  # Priority disabled, always 0
+            is_doan_cuoi = [bool(row[3]) if len(row) > 3 and row[3] is not None else False for row in valid_rows]
 
             # === LOGGING INPUT PARAMETERS ===
             logger.info(f"Stock Length: {stock_length}mm")

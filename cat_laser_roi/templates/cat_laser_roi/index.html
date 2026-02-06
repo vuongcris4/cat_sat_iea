@@ -10,8 +10,6 @@
             <div class="mb-3">{{ form.max_waste_percentage.label_tag }} {{ form.max_waste_percentage }}</div>
             <div class="mb-3">{{ form.max_surplus.label_tag }} {{ form.max_surplus }}</div>
             <div class="mb-3">{{ form.time_limit_minutes.label_tag }} {{ form.time_limit_minutes }}</div>
-            <div class="form-check mb-3">{{ form.use_priority_constraint }} {{ form.use_priority_constraint.label_tag }}
-            </div>
             <div class="mb-3">
                 {{ form.pattern_limit.label_tag }}
                 {{ form.pattern_limit }}
@@ -131,20 +129,24 @@
     let tableData = JSON.parse(localStorage.getItem('handsontable_data'));
     if (!tableData) {
         tableData = [
-            ['Sắt A', 470, 3200, 1, true],
-            ['Sắt B', 460, 1600, 2, true],
-            ['Sắt C', 445, 3200, 4, true],
-            ['Sắt D', 430, 3200, 2, true],
-            ['Sắt E', 425, 1600, 1, true],
-            ['Sắt F', 190, 3200, 1, true],
-            ['Sắt G', 25, 3200, 0, true]
+            ['Sắt A', 470, 3200, true],
+            ['Sắt B', 460, 1600, true],
+            ['Sắt C', 445, 3200, true],
+            ['Sắt D', 430, 3200, true],
+            ['Sắt E', 425, 1600, true],
+            ['Sắt F', 190, 3200, true],
+            ['Sắt G', 25, 3200, true]
         ];
     } else {
-        // Ensure existing data has the new column
+        // Migrate old data format (5 columns) to new format (4 columns - without Priority)
         tableData = tableData.map(row => {
-            if (row.length < 5) {
-                const length = parseFloat(row[1]);
-                row.push(Number.isInteger(length));
+            if (row.length >= 5) {
+                // Remove Priority column (index 3), keep ĐOẠN CUỐI (index 4)
+                return [row[0], row[1], row[2], row[4]];
+            } else if (row.length === 4) {
+                return row; // Already in new format
+            } else if (row.length === 3) {
+                return [...row, true]; // Add ĐOẠN CUỐI default
             }
             return row;
         });
@@ -152,10 +154,9 @@
 
     const hot = new Handsontable(container, {
         data: tableData,
-        colHeaders: ['Tên sắt', 'Kích thước (mm)', 'SL Cần', 'Priority', 'ĐOẠN CUỐI'],
+        colHeaders: ['Tên sắt', 'Kích thước (mm)', 'SL Cần', 'ĐOẠN CUỐI'],
         columns: [
             { type: 'text' },
-            { type: 'numeric' },
             { type: 'numeric' },
             { type: 'numeric' },
             { type: 'checkbox', className: 'htCenter' }
@@ -233,7 +234,7 @@
             max_waste_percentage: parseFloat(document.getElementById('id_max_waste_percentage').value),
             max_surplus: safeParseInt('id_max_surplus', 10),
             max_total_surplus: safeParseInt('id_max_total_surplus', 1000),
-            use_priority_constraint: document.getElementById('id_use_priority_constraint').checked,
+            use_priority_constraint: false,  // Disabled - always false
             pattern_limit: safeParseInt('id_pattern_limit', 100000),
             optimize_stock_length: document.getElementById('id_optimize_stock_length').checked,
             optimize_min_length: safeParseInt('id_optimize_min_length', 5000),

@@ -1,0 +1,28 @@
+2026-02-06 04:34:38,520 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: NEW OPTIMIZATION REQUEST at 2026-02-06T04:34:38.521120
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: User: admin
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: Stock Length: 5850mm
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: Max Waste %: 1.00%
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: Max Surplus per type: 10
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: Max Total Surplus: 1000
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: Priority Constraint: True
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: Pattern Limit: 100000
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: Optimize Stock Length: False
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: Time Limit: 2 minutes
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO: Number of piece types: 7
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO:   [1] Sắt A: 470.0mm x 3200 pcs (priority=0, is_end=False)
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO:   [2] Sắt B: 460.0mm x 1600 pcs (priority=0, is_end=False)
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO:   [3] Sắt C: 445.0mm x 3200 pcs (priority=0, is_end=False)
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO:   [4] Sắt D: 430.0mm x 3200 pcs (priority=0, is_end=False)
+2026-02-06 04:34:38,521 [CAT_LASER_ROI] INFO:   [5] Sắt E: 425.0mm x 1600 pcs (priority=0, is_end=False)
+2026-02-06 04:34:38,522 [CAT_LASER_ROI] INFO:   [6] Sắt F: 190.0mm x 3200 pcs (priority=0, is_end=False)
+2026-02-06 04:34:38,522 [CAT_LASER_ROI] INFO:   [7] Sắt G: 25.0mm x 3200 pcs (priority=0, is_end=False)
+2026-02-06 04:34:38,522 [CAT_LASER_ROI] INFO: ------------------------------------------------------------
+2026-02-06 04:34:38,522 [CAT_LASER_ROI] INFO: Starting Phase 1: Pattern Generation (Normal Mode)...
+2026-02-06 04:34:38,536 [CAT_LASER_ROI] INFO: Phase 1 complete. Found 47577 patterns.
+2026-02-06 04:34:38,536 [CAT_LASER_ROI] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-06 04:37:17,082 [CAT_LASER_ROI] INFO: Phase 2 complete.
+2026-02-06 04:37:17,082 [CAT_LASER_ROI] INFO: ============================================================
+2026-02-06 04:37:17,082 [CAT_LASER_ROI] INFO: OPTIMIZATION COMPLETE
+2026-02-06 04:37:17,082 [CAT_LASER_ROI] INFO: ============================================================
