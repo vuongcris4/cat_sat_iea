@@ -135,9 +135,15 @@ def optimize(request):
                 distribution = optimizer.optimize_distribution()
                 logger.info("Phase 2 complete.")
 
+                # === LOG OPTIMIZATION RESULTS ===
                 logger.info("="*60)
-                logger.info("OPTIMIZATION COMPLETE")
+                logger.info("OPTIMIZATION RESULTS")
+                logger.info(f"  Total Patterns Found: {len(solutions) if solutions else 0}")
+                logger.info(f"  Distribution Shape: {distribution.shape if hasattr(distribution, 'shape') else len(distribution)}")
+                if hasattr(distribution, 'sum'):
+                    logger.info(f"  Total Bars Used: {int(distribution.sum())}")
                 logger.info("="*60)
+                
                 return JsonResponse({
                     "status": "success",
                     "solutions": solutions,

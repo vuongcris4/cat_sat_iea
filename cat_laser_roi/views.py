@@ -176,7 +176,7 @@ def run_optimization(request):
             if patterns_data is not None and not patterns_data.empty:
                 logger.info(f"Phase 1 complete. Found {len(patterns_data)} patterns.")
                 logger.info("Starting Phase 2: Distribution Optimization...")
-                solve_phase2(
+                result = solve_phase2(
                     stock_length,
                     patterns_data,
                     piece_names,
@@ -190,6 +190,17 @@ def run_optimization(request):
                     optimal_stock_info=None  # Không có optimal info khi chạy bình thường
                 )
                 logger.info("Phase 2 complete.")
+                
+                # === LOG OPTIMIZATION RESULTS ===
+                if result:
+                    logger.info("="*60)
+                    logger.info("OPTIMIZATION RESULTS")
+                    logger.info(f"  Total Bars Used: {result['total_bars']}")
+                    logger.info(f"  Total Waste: {result['total_waste_mm']:.2f}mm ({result['waste_percentage']:.2f}%)")
+                    logger.info(f"  Total Surplus: {result['total_surplus']} pcs")
+                    logger.info("="*60)
+                else:
+                    logger.warning("Optimization failed - no result returned")
             else:
                 logger.warning("No patterns found from Phase 1!")
 
