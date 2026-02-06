@@ -241,7 +241,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         solver.parameters.log_search_progress = True
 
         # KHÔNG dùng time limit cho GĐ1 (đã bỏ)
-        solver.parameters.num_search_workers = 1
+        solver.parameters.num_search_workers = 8
 
         # chuẩn bị exclude từ cache hiện có (nếu có)
         exclude_set = set()

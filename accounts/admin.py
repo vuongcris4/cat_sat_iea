@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.contrib.sessions.models import Session
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.utils.html import format_html
+from .models import OTPCode
 
 
 class SessionAdmin(admin.ModelAdmin):
@@ -34,9 +36,43 @@ class SessionAdmin(admin.ModelAdmin):
     def get_decoded_data(self, obj):
         return str(obj.get_decoded())
     get_decoded_data.short_description = 'Decoded Data'
+
+
+class OTPCodeAdmin(admin.ModelAdmin):
+    list_display = ['user', 'current_otp_display', 'time_remaining_display', 'is_active']
+    list_filter = ['is_active']
+    search_fields = ['user__username']
+    readonly_fields = ['secret_key', 'current_otp_display', 'time_remaining_display']
     
-    actions = ['delete_selected']
+    def current_otp_display(self, obj):
+        """Hiển thị mã OTP hiện tại với font lớn"""
+        if obj.is_active:
+            otp = obj.get_current_otp()
+            return format_html(
+                '<span style="font-size: 24px; font-weight: bold; color: #2563eb; '
+                'background: #dbeafe; padding: 4px 12px; border-radius: 6px; '
+                'letter-spacing: 0.15em;">{}</span>',
+                otp
+            )
+        return format_html('<span style="color: #9ca3af;">Đã tắt</span>')
+    current_otp_display.short_description = 'MÃ HIỆN TẠI'
+    
+    def time_remaining_display(self, obj):
+        """Hiển thị thời gian còn lại"""
+        if obj.is_active:
+            remaining = obj.time_remaining()
+            color = '#dc2626' if remaining <= 5 else '#16a34a'
+            return format_html(
+                '<span style="font-weight: bold; color: {};">{} giây</span>',
+                color, remaining
+            )
+        return '-'
+    time_remaining_display.short_description = 'Còn lại'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
 
 
-# Register Session model
+# Register models
 admin.site.register(Session, SessionAdmin)
+admin.site.register(OTPCode, OTPCodeAdmin)

@@ -40,6 +40,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 INSTALLED_APPS = [
     'daphne',
+    'accounts',
     'cat_sat',
     'cat_laser',
     'cat_laser_roi',
