@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
+from django.contrib.auth.decorators import login_required
 import json
 from .forms import OptimizationForm
 from .optimization_logic import SteelCuttingOptimizer, SolverTimer
@@ -25,10 +26,12 @@ class TeeStream:
     def flush(self):
         pass
 
+@login_required
 def index(request):
     form = OptimizationForm()
     return render(request, 'cat_sat/index.html', {'form': form})
 
+@login_required
 def optimize(request):
     if request.method == 'POST':
         original_stdout = sys.stdout

@@ -1,12 +1,11 @@
 from ortools.sat.python import cp_model
 import numpy as np
-import os
-import pickle # Để lưu/tải đối tượng Python
-import hashlib # Để tạo khóa cache
 from channels.layers import get_channel_layer
 import asyncio
-import os
 import signal
+
+# Unified cache utility
+from utils.cache_utils import PatternCache
 
 # ================================= LỚP TẠO PATTERN =================================
 class TeeStream:
@@ -264,49 +263,33 @@ def _extract_solution_matrix(solutions, num_sol=-1):
 
 
 # ============================ HÀM HỖ TRỢ CACHING ============================
-CACHE_DIR = "pattern_cache" # Thư mục lưu cache
+# Use unified PatternCache from utils/cache_utils.py
+_pattern_cache = PatternCache()
 
 def generate_cache_key(item_sizes, item_waste_factors, stock_length):
     """Tạo khóa cache duy nhất từ input của PatternGenerator."""
-    # Chuyển list/array thành tuple để đảm bảo hash được và đúng thứ tự
-    key_data = (
-        tuple(np.round(item_sizes, 2)), # Làm tròn để tránh lỗi do float precision
-        tuple(item_waste_factors),
-        round(stock_length, 2)
-    )
-    # Sử dụng pickle để serialize và hashlib để tạo hash ổn định
-    serialized_data = pickle.dumps(key_data)
-    hasher = hashlib.sha256()
-    hasher.update(serialized_data)
-    return hasher.hexdigest()
+    import numpy as np
+    key_data = {
+        'item_sizes': [round(float(x), 2) for x in item_sizes],
+        'item_waste_factors': list(item_waste_factors),
+        'stock_length': round(float(stock_length), 2)
+    }
+    return PatternCache.generate_cache_key(key_data)
 
 def save_to_cache(cache_key, data):
     """Lưu dữ liệu vào file cache."""
-    if not os.path.exists(CACHE_DIR):
-        os.makedirs(CACHE_DIR) # Tạo thư mục nếu chưa có
-    filepath = os.path.join(CACHE_DIR, f"{cache_key}.pkl")
-    try:
-        with open(filepath, 'wb') as f:
-            pickle.dump(data, f)
-        print(f"Đã lưu kết quả patterns vào cache: {filepath}<br>")
-    except IOError as e:
-        print(f"Lỗi khi lưu cache: {e}<br>")
+    metadata = {
+        'module': 'cat_laser',
+        'cache_key': cache_key
+    }
+    if _pattern_cache.save(cache_key, data, metadata):
+        print(f"Đã lưu kết quả patterns vào cache<br>")
+    else:
+        print(f"Lỗi khi lưu cache<br>")
 
 def load_from_cache(cache_key):
     """Tải dữ liệu từ file cache."""
-    filepath = os.path.join(CACHE_DIR, f"{cache_key}.pkl")
-    if os.path.exists(filepath):
-        try:
-            with open(filepath, 'rb') as f:
-                data = pickle.load(f)
-            print(f"Đã tải kết quả patterns từ cache: {filepath}<br>")
-            return data
-        except (IOError, pickle.PickleError, EOFError) as e:
-            print(f"Lỗi khi đọc cache (sẽ tạo lại): {e}<br>")
-            # Có thể xóa file cache lỗi nếu muốn
-            # try: os.remove(filepath)
-            # except OSError: pass
-            return None
-    else:
-        # print("Không tìm thấy file cache phù hợp.")
-        return None
+    data = _pattern_cache.load(cache_key)
+    if data is not None:
+        print(f"Đã tải kết quả patterns từ cache<br>")
+    return data

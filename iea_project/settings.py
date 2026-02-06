@@ -27,7 +27,13 @@ SECRET_KEY = 'django-insecure-t76zt5zr(cfl^t*iatw4kh#^69i()@x@kjk%5u$*bgt_vh3^r8
 DEBUG = True
 DEBUG_PROPAGATE_EXCEPTIONS = True
 
-ALLOWED_HOSTS = ['192.168.192.95', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
+
+# CSRF trusted origins - required for POST requests from these domains
+CSRF_TRUSTED_ORIGINS = [
+    'https://catsatold.dongnama.app',
+    'http://catsatold.dongnama.app',
+]
 
 
 # Application definition
@@ -148,11 +154,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = 'static/'
 
 ASGI_APPLICATION = 'iea_project.asgi.application'
+# Redis host: use env var for Docker, fallback to localhost for dev
+REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(REDIS_HOST, 6379)],
         },
     },
 }
@@ -160,3 +169,8 @@ CHANNEL_LAYERS = {
 # Timeout cho Daphne ASGI server (30 phút = 1800 giây)
 # Cho phép các tác vụ optimization chạy lâu không bị kill
 DAPHNE_REQUEST_TIMEOUT = 1800  # 30 phút
+
+# Authentication settings
+LOGIN_URL = 'accounts:login'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = 'accounts:login'

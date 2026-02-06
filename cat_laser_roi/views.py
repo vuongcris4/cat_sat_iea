@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 import json
 import sys
 import asyncio
@@ -30,11 +31,13 @@ class TeeStream:
     def flush(self):
         pass
 
+@login_required
 def index(request):
     form = OptimizationForm()
     context = {'form': form}
     return render(request, 'cat_laser_roi/index.html', context)
 
+@login_required
 def run_optimization(request):
     if request.method == 'POST':
         original_stdout = sys.stdout

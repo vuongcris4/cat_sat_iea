@@ -2,14 +2,16 @@ from ortools.sat.python import cp_model
 import numpy as np
 import pandas as pd
 import os
-import pickle
 import hashlib
 from datetime import datetime
 import time
 import threading
 import math
 import redis
-import json 
+import json
+
+# Unified cache utility
+from utils.cache_utils import PatternCache 
 
 # HỆ SỐ ĐỂ NHÂN CÁC GIÁ TRỊ THẬP PHÂN THÀNH SỐ NGUYÊN
 SCALING_FACTOR = 10
@@ -49,7 +51,7 @@ def find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max
 
     # cây sắt - cùi sắt
     model.Add(total_material_used <= stock_length_int)
-    min_material_used = int(stock_length_int * (1 - max_waste_percentage))
+    min_material_used = int((stock_length_int - trim_start_int) * (1 - max_waste_percentage))
     model.Add(min_material_used <= total_material_used)
 
     waste_var = model.NewIntVar(0, stock_length_int, 'waste')
@@ -136,27 +138,31 @@ def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste
         limit = pattern_limit
     
     # Cache key phụ thuộc vào thứ tự và giá trị của các đoạn cắt + pattern_limit
-    params_string = f"{stock_length}-{tuple(piece_lengths)}-{kerf_width}-{max_waste_percentage}-{trim_start}-{limit}"
-    input_hash = hashlib.sha256(params_string.encode('utf-8')).hexdigest()[:16]
+    key_data = {
+        'stock_length': stock_length,
+        'piece_lengths': list(piece_lengths),
+        'kerf_width': kerf_width,
+        'max_waste_percentage': max_waste_percentage,
+        'trim_start': trim_start,
+        'limit': limit
+    }
+    input_hash = PatternCache.generate_cache_key(key_data)
     
-    filename = os.path.join(cache_folder, f"patterns_{input_hash}.pkl")
-    metadata_filename = filename.replace('.pkl', '_metadata.json')
+    # Use unified cache
+    cache = PatternCache()
+    cache_key = input_hash
     
-    # Kiểm tra cache và metadata
-    if os.path.exists(filename):
-        print(f"👍 GĐ 1: Đã tìm thấy file nghiệm '{filename}'. Đang kiểm tra...<br>")
+    # Kiểm tra cache
+    if cache.exists(cache_key):
+        print(f"👍 GĐ 1: Đã tìm thấy nghhiệm trong cache. Đang kiểm tra...<br>")
         
         # Đọc metadata để kiểm tra số lượng patterns trong cache
+        meta = cache.get_metadata(cache_key)
         cache_limit = None
-        if os.path.exists(metadata_filename):
-            try:
-                with open(metadata_filename, 'r', encoding='utf-8') as f:
-                    metadata = json.load(f)
-                    cache_limit = metadata.get('limit_used', metadata.get('pattern_limit', None))
-                    cache_count = metadata.get('pattern_count', 0)
-                    print(f"📋 Metadata: Cache chứa {cache_count:,} patterns (limit: {cache_limit:,})<br>")
-            except Exception as e:
-                print(f"⚠️ Không đọc được metadata: {str(e)}<br>")
+        if meta:
+            cache_limit = meta.get('limit_used', meta.get('pattern_limit', None))
+            cache_count = meta.get('item_count', 0)
+            print(f"📋 Metadata: Cache chứa {cache_count:,} patterns (limit: {cache_limit})<br>")
         
         # Kiểm tra xem cache có đủ patterns không
         if cache_limit is not None and limit > cache_limit:
@@ -166,44 +172,36 @@ def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste
             patterns = find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay, pattern_limit=limit)
             
             if patterns is not None and not patterns.empty:
-                # Ghi đè cache cũ
-                with open(filename, 'wb') as f:
-                    pickle.dump(patterns, f)
-                print(f"💾 GĐ 1: Đã cập nhật cache với {len(patterns):,} patterns mới<br>")
-                
-                # Cập nhật metadata
+                # Save to cache with metadata
                 new_metadata = {
+                    'module': 'cat_laser_roi',
                     'stock_length': stock_length,
-                    'piece_lengths': piece_lengths,
+                    'piece_lengths': list(piece_lengths),
                     'kerf_width': kerf_width,
                     'max_waste_percentage': max_waste_percentage,
                     'trim_start': trim_start,
-                    'pattern_count': len(patterns),
-                    'input_hash': input_hash,
-                    'created_at': datetime.now().isoformat(),
                     'pattern_limit': limit,
                     'limit_used': limit
                 }
-                with open(metadata_filename, 'w', encoding='utf-8') as f:
-                    json.dump(new_metadata, f, indent=2, ensure_ascii=False)
-                print(f"📋 GĐ 1: Đã cập nhật metadata<br>")
+                cache.save(cache_key, patterns, new_metadata)
+                print(f"💾 GĐ 1: Đã cập nhật cache với {len(patterns):,} patterns mới<br>")
             return patterns
         else:
             # Cache đủ hoặc không cần kiểm tra, load cache
-            with open(filename, 'rb') as f:
-                patterns = pickle.load(f)
+            patterns = cache.load(cache_key)
+            
+            if patterns is None:
+                return None
             
             # Lọc kết quả từ file cache nếu nó lớn hơn giới hạn cho phép
             if len(patterns) > limit:
                 original_count = len(patterns)
-                # Vì các patterns đã được sắp xếp theo hao hụt khi lưu,
-                # lấy N hàng đầu tiên chính là lấy N patterns tốt nhất.
                 patterns = patterns.head(limit)
                 print(f"⚠️ File cache chứa {original_count:,} patterns, đã được lọc lại còn **{len(patterns):,} patterns tốt nhất**.<br>")
             
             # Tính và in % hao hụt thấp nhất và cao nhất của patterns đã load
-            min_waste_mm = patterns['Hao hụt (mm)'].min() / SCALING_FACTOR  # Chia lại SCALING_FACTOR
-            max_waste_mm = patterns['Hao hụt (mm)'].max() / SCALING_FACTOR  # Chia lại SCALING_FACTOR
+            min_waste_mm = patterns['Hao hụt (mm)'].min() / SCALING_FACTOR
+            max_waste_mm = patterns['Hao hụt (mm)'].max() / SCALING_FACTOR
             min_waste_pct = (min_waste_mm / stock_length) * 100
             max_waste_pct = (max_waste_mm / stock_length) * 100
             print(f"📊 Hao hụt trong các patterns: <b>{min_waste_pct:.2f}%</b> ({min_waste_mm:.1f}mm) → <b>{max_waste_pct:.2f}%</b> ({max_waste_mm:.1f}mm)<br>")
@@ -214,26 +212,19 @@ def get_or_calculate_patterns(stock_length, piece_lengths, kerf_width, max_waste
         # Không có cache, tạo mới
         patterns = find_efficient_cutting_patterns(stock_length, piece_lengths, kerf_width, max_waste_percentage, trim_start, doan_thua_cat_tay, pattern_limit=limit)
         if patterns is not None and not patterns.empty:
-            with open(filename, 'wb') as f:
-                pickle.dump(patterns, f)
-            print(f"💾 GĐ 1: Đã lưu bộ nghiệm mới vào file: '{filename}'<br>")
-            
-            # Lưu metadata kèm theo
+            # Save with metadata
             metadata = {
+                'module': 'cat_laser_roi',
                 'stock_length': stock_length,
-                'piece_lengths': piece_lengths,
+                'piece_lengths': list(piece_lengths),
                 'kerf_width': kerf_width,
                 'max_waste_percentage': max_waste_percentage,
                 'trim_start': trim_start,
-                'pattern_count': len(patterns),
-                'input_hash': input_hash,
-                'created_at': datetime.now().isoformat(),
                 'pattern_limit': limit,
                 'limit_used': limit
             }
-            with open(metadata_filename, 'w', encoding='utf-8') as f:
-                json.dump(metadata, f, indent=2, ensure_ascii=False)
-            print(f"📋 GĐ 1: Đã lưu metadata ({len(patterns):,} patterns) vào: '{metadata_filename}'<br>")
+            cache.save(cache_key, patterns, metadata)
+            print(f"💾 GĐ 1: Đã lưu bộ nghiệm mới vào cache ({len(patterns):,} patterns)<br>")
         return patterns
 
 

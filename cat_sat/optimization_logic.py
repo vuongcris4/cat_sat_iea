@@ -1,17 +1,18 @@
 import hashlib
 import json
-import os
-import pickle
 import threading
 import time
 from collections import Counter
-from datetime import datetime  # <-- Đã import
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 # OR-Tools CP-SAT
 from ortools.sat.python import cp_model
+
+# Unified cache utility
+from utils.cache_utils import PatternCache
 
 
 # ===================================================================
@@ -74,10 +75,8 @@ class SteelCuttingOptimizer:
         self.solutions = []
         self.solution_matrix = None
 
-        # ---- Pickle cache setup: pattern_cache nằm cùng cấp project folder ----
-        self.BASE_DIR = Path(__file__).resolve().parents[1]  # .../cat_sat_iea
-        self.CACHE_DIR = self.BASE_DIR / "pattern_cache"
-        self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        # ---- Cache setup using unified PatternCache ----
+        self._cache = PatternCache()
 
     # -------------- Cache helpers --------------
     def _cache_key(self):
@@ -86,20 +85,18 @@ class SteelCuttingOptimizer:
             "segment_sizes": list(map(float, self.segment_sizes.tolist())),
             "blade_width": float(self.blade_width),
         }
-        s = json.dumps(payload, sort_keys=True, ensure_ascii=False)
-        return hashlib.md5(s.encode("utf-8")).hexdigest()
-
-    def _cache_path(self):
-        key = self._cache_key()
-        return self.CACHE_DIR / f"patterns_{key}.pkl"
+        return PatternCache.generate_cache_key(payload, use_md5=True)
 
     def save_solution_to_pickle(self):
         """Lưu list[(obj_value, solution)] vào file pickle."""
-        path = self._cache_path()
-        tmp = str(path) + ".tmp"
-        with open(tmp, "wb") as f:
-            pickle.dump(self.solutions, f, protocol=pickle.HIGHEST_PROTOCOL)
-        os.replace(tmp, path)
+        key = self._cache_key()
+        metadata = {
+            "module": "cat_sat",
+            "length": self.length,
+            "segment_sizes": list(map(float, self.segment_sizes.tolist())),
+            "blade_width": self.blade_width,
+        }
+        self._cache.save(key, self.solutions, metadata)
 
     def cut_list(self, lst, x, length):
         """Áp tề đầu: bỏ các pattern có obj_value + te_dau > length."""
@@ -109,15 +106,10 @@ class SteelCuttingOptimizer:
         return []
 
     def load_solution_from_pickle(self):
-        path = self._cache_path()
-        if not path.exists():
-            return []
-        try:
-            list_solutions = None
-            with open(path, "rb") as f:
-                list_solutions = pickle.load(f)  # [(obj_value, [x_i,...]), ...]
-        except Exception:
-            # Hỏng file cache => bỏ qua
+        key = self._cache_key()
+        list_solutions = self._cache.load(key)
+        
+        if list_solutions is None:
             return []
 
         print("------------------------------------------------<br>")
