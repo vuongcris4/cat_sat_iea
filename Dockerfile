@@ -41,4 +41,4 @@ USER appuser
 EXPOSE 8000
 
 # Run with Daphne (ASGI for WebSocket)
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "iea_project.asgi:application"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "--application-close-timeout", "300", "iea_project.asgi:application"]
