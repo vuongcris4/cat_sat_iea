@@ -1,0 +1,648 @@
+2026-02-07 02:55:47,471 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:55:47.472131
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:55:47,472 [CAT_SAT] INFO: Number of piece types: 3
+2026-02-07 02:55:47,472 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:55:47,473 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:55:47,473 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:55:47,473 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:55:47,473 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:55:56,631 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:55:56.631998
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:55:56,632 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 02:55:56,632 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:55:56,632 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:55:56,633 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:55:56,633 [CAT_SAT] INFO:   [4] v10: 422.0mm x 72 pcs
+2026-02-07 02:55:56,633 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:55:56,633 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:56:05.939616
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:56:05,939 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:56:05,940 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:56:05,940 [CAT_SAT] INFO: Number of piece types: 3
+2026-02-07 02:56:05,940 [CAT_SAT] INFO:   [1] v10: 510.0mm x 400 pcs
+2026-02-07 02:56:05,940 [CAT_SAT] INFO:   [2] v10: 500.0mm x 300 pcs
+2026-02-07 02:56:05,940 [CAT_SAT] INFO:   [3] v10: 441.0mm x 300 pcs
+2026-02-07 02:56:05,940 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:56:05,940 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:56:28,181 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:56:28,181 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:56:28.181790
+2026-02-07 02:56:28,181 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:56:28,181 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:56:28,182 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:56:28,182 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:56:28,182 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:56:28,182 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:56:28,182 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:56:28,182 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:56:28,182 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:56:28,182 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 02:56:28,182 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:56:28,182 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:56:28,182 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:56:28,182 [CAT_SAT] INFO:   [4] v10: 845.0mm x 100 pcs
+2026-02-07 02:56:28,182 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:56:28,183 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:56:32.731227
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 02:56:32,731 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:56:32,731 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:56:32,731 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:56:32,731 [CAT_SAT] INFO:   [4] v10: 850.0mm x 100 pcs
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:56:32,731 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:56:38.381579
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:56:38,381 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 02:56:38,382 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:56:38,382 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:56:38,382 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:56:38,382 [CAT_SAT] INFO:   [4] v10: 637.0mm x 100 pcs
+2026-02-07 02:56:38,382 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:56:38,382 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:57:11,235 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:11,235 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:57:11.235478
+2026-02-07 02:57:11,235 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:57:11,235 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:11,235 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:57:11,235 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:57:11,235 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:57:11,236 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:57:11,236 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:57:11,236 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:57:11,236 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:57:11,236 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 02:57:11,236 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:57:11,236 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:57:11,236 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:57:11,236 [CAT_SAT] INFO:   [4] v10: 110.0mm x 100 pcs
+2026-02-07 02:57:11,236 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:57:11,236 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:57:18.538588
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:57:18,538 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:57:18,539 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:57:18,539 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 02:57:18,539 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:57:18,539 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:57:18,539 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:57:18,539 [CAT_SAT] INFO:   [4] v10: 110.0mm x 200 pcs
+2026-02-07 02:57:18,539 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:57:18,539 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:57:26.972308
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 02:57:26,972 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:57:26,972 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:57:26,972 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:57:26,972 [CAT_SAT] INFO:   [4] v10: 425.0mm x 200 pcs
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:57:26,972 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:57:32,355 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:32,355 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:57:32.355975
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 02:57:32,356 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:57:32,356 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:57:32,356 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:57:32,356 [CAT_SAT] INFO:   [4] v10: 427.0mm x 200 pcs
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:57:32,356 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:57:44,632 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:44,632 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:57:44.632860
+2026-02-07 02:57:44,632 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 02:57:44,633 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:57:44,633 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:57:44,633 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:57:44,633 [CAT_SAT] INFO:   [4] v10: 45.0mm x 200 pcs
+2026-02-07 02:57:44,633 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:57:44,634 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:58:06,675 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:58:06,675 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:58:06.675983
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:58:06,676 [CAT_SAT] INFO: Number of piece types: 5
+2026-02-07 02:58:06,676 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:58:06,676 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:58:06,676 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:58:06,676 [CAT_SAT] INFO:   [4] v10: 637.0mm x 100 pcs
+2026-02-07 02:58:06,676 [CAT_SAT] INFO:   [5] v10: 110.0mm x 100 pcs
+2026-02-07 02:58:06,677 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:58:06,677 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T02:58:28.146652
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: User: ketoan
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: ============================================================
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: Factors: [56, 52, 48, 60, 64, 68, 72, 76, 80, 84, 88, 100]
+2026-02-07 02:58:28,146 [CAT_SAT] INFO: Number of piece types: 5
+2026-02-07 02:58:28,147 [CAT_SAT] INFO:   [1] v10: 510.0mm x 360 pcs
+2026-02-07 02:58:28,147 [CAT_SAT] INFO:   [2] v10: 500.0mm x 216 pcs
+2026-02-07 02:58:28,147 [CAT_SAT] INFO:   [3] v10: 441.0mm x 216 pcs
+2026-02-07 02:58:28,147 [CAT_SAT] INFO:   [4] v10: 637.0mm x 100 pcs
+2026-02-07 02:58:28,147 [CAT_SAT] INFO:   [5] v10: 110.0mm x 100 pcs
+2026-02-07 02:58:28,147 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 02:58:28,147 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:12:04,791 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:12:04,791 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:12:04.791851
+2026-02-07 03:12:04,791 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:12:04,791 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:12:04,791 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:12:04,792 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:12:04,792 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:12:04,792 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:12:04,792 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:12:04,792 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:12:04,792 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:12:04,792 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:12:04,792 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:12:04,792 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:12:04,792 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:12:04,792 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:12:04,792 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:12:04,792 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:15:56.256145
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:15:56,256 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:15:56,256 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:15:56,256 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:15:56,256 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:15:56,256 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:15:56,479 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:15:56.480007
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:15:56,480 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:15:56,480 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:15:56,480 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:15:56,480 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:15:56,480 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:15:57.256341
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:15:57,256 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:15:57,257 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:15:57,257 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:15:57,257 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:15:57,257 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:15:57,257 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:15:57,257 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:15:57,257 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:15:57,257 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:16:20,843 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:16:20,843 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:16:20.843745
+2026-02-07 03:16:20,843 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:16:20,843 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:16:20,843 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:16:20,843 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:16:20,843 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:16:20,843 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:16:20,843 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:16:20,844 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:16:20,844 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:16:20,844 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:16:20,844 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:16:20,844 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:16:20,844 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:16:20,844 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:16:20,844 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:16:20,844 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:16:22.270347
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:16:22,270 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:16:22,270 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:16:22,270 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:16:22,270 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:16:22,270 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:16:22,271 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:16:36,279 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:16:36,279 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:16:36.279899
+2026-02-07 03:16:36,279 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:16:36,280 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:16:36,280 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:16:36,280 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:16:36,280 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:16:36,280 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:16:36,281 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:17:06.711286
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:17:06,711 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:17:06,711 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:17:06,711 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:17:06,711 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:17:06,711 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:18:02,426 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:18:02.427101
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:18:02,427 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:18:02,427 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:18:02,427 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:18:02,427 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:18:02,427 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:20:12.998688
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:20:12,998 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:20:12,999 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:20:12,999 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:20:12,999 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:20:12,999 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:20:12,999 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:20:12,999 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:20:12,999 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:20:12,999 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:20:21,036 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:20:21,036 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:20:21.036613
+2026-02-07 03:20:21,036 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:20:21,036 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:20:21,036 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:20:21,036 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:20:21,036 [CAT_SAT] INFO: Blade Width: 3mm
+2026-02-07 03:20:21,036 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:20:21,036 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:20:21,037 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:20:21,037 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:20:21,037 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:20:21,037 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:20:21,037 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:20:21,037 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:20:21,037 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:20:21,037 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:20:21,037 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:20:24,149 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:20:24.150080
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:20:24,150 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:20:24,150 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:20:24,150 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:20:24,150 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:20:24,150 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:20:45.759185
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:20:45,759 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:20:45,759 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:20:45,759 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:20:45,760 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:20:45,760 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:20:45,760 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:20:45,760 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:25:50,131 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:25:50,131 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:25:50.131689
+2026-02-07 03:25:50,131 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:25:50,131 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:25:50,131 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:25:50,131 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:25:50,131 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:25:50,131 [CAT_SAT] INFO: Max Manual Cuts: 5
+2026-02-07 03:25:50,131 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:25:50,132 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:25:50,132 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:25:50,132 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:25:50,132 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:25:50,132 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:25:50,132 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:25:50,132 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:25:50,132 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:25:50,132 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:25:56.152292
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: Max Manual Cuts: 10
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: Max Stock Over: 20
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:25:56,152 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:25:56,152 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:25:56,152 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:25:56,152 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:25:56,152 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:25:59,419 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:25:59,419 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:25:59.419898
+2026-02-07 03:25:59,419 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: Te Dau Sat: 0mm
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: Max Manual Cuts: 10
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: Max Stock Over: 10
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:25:59,420 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:25:59,420 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:25:59,420 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:25:59,420 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:25:59,420 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:25:59,421 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:37:39,685 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:37:39,685 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:37:39.685893
+2026-02-07 03:37:39,685 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: Te Dau Sat: 15mm
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: Max Manual Cuts: 10
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: Max Stock Over: 10
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:37:39,686 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:37:39,686 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:37:39,686 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:37:39,686 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:37:39,686 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:37:39,687 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:37:47,059 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:37:47,059 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:37:47.059959
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: Te Dau Sat: 15mm
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: Max Manual Cuts: 10
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: Max Stock Over: 10
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:37:47,060 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:37:47,060 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:37:47,060 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:37:47,060 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:37:47,060 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:37:49.431326
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: Te Dau Sat: 15mm
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: Max Manual Cuts: 10
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: Max Stock Over: 10
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:37:49,431 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:37:49,431 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:37:49,431 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:37:49,431 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:37:49,431 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:37:49,432 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:39:10,366 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:39:10,366 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:39:10.366711
+2026-02-07 03:39:10,366 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:39:10,366 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:39:10,366 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:39:10,367 [CAT_SAT] INFO: Te Dau Sat: 15mm
+2026-02-07 03:39:10,367 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:39:10,367 [CAT_SAT] INFO: Max Manual Cuts: 10
+2026-02-07 03:39:10,367 [CAT_SAT] INFO: Max Stock Over: 10
+2026-02-07 03:39:10,367 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:39:10,367 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:39:10,367 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:39:10,367 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:39:10,367 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:39:10,367 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:39:10,367 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:39:10,367 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:39:10,367 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:44:37.167369
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: Te Dau Sat: 15mm
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: Max Manual Cuts: 10
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: Max Stock Over: 10
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:44:37,167 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:44:37,168 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:44:37,168 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1600 pcs
+2026-02-07 03:44:37,168 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1600 pcs
+2026-02-07 03:44:37,168 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 800 pcs
+2026-02-07 03:44:37,168 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1600 pcs
+2026-02-07 03:44:37,168 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:44:37,168 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:44:37,243 [CAT_SAT] INFO: Phase 1 complete. Found 1817 patterns.
+2026-02-07 03:44:37,243 [CAT_SAT] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-07 03:46:37,546 [CAT_SAT] INFO: Phase 2 complete.
+2026-02-07 03:46:37,548 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:46:37,548 [CAT_SAT] INFO: OPTIMIZATION RESULTS
+2026-02-07 03:46:37,549 [CAT_SAT] INFO:   Total Patterns Found: 1817
+2026-02-07 03:46:37,549 [CAT_SAT] INFO:   Distribution Shape: (1817, 5)
+2026-02-07 03:46:37,550 [CAT_SAT] INFO:   Total Bars Used: 27
+2026-02-07 03:46:37,550 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: NEW OPTIMIZATION REQUEST at 2026-02-07T03:48:23.752606
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: User: ketoan
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: Stock Length: 6000mm
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: Te Dau Sat: 15mm
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: Blade Width: 2.5mm
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: Max Manual Cuts: 10
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: Max Stock Over: 10
+2026-02-07 03:48:23,752 [CAT_SAT] INFO: Time Limit: 120s
+2026-02-07 03:48:23,753 [CAT_SAT] INFO: Factors: [14, 16, 18, 20]
+2026-02-07 03:48:23,753 [CAT_SAT] INFO: Number of piece types: 4
+2026-02-07 03:48:23,753 [CAT_SAT] INFO:   [1]  Sắt fi 21 (6zem) (uốn,1 tán*2) : 615.0mm x 1590 pcs
+2026-02-07 03:48:23,753 [CAT_SAT] INFO:   [2]  Sắt fi 21 (6zem) (thẳng, 1 tán *2) : 600.0mm x 1590 pcs
+2026-02-07 03:48:23,753 [CAT_SAT] INFO:   [3]  Sắt fi 21 (6zem) ( Uốn ) : 500.0mm x 790 pcs
+2026-02-07 03:48:23,753 [CAT_SAT] INFO:   [4]  Sắt fi 21 (6zem) : 255.0mm x 1590 pcs
+2026-02-07 03:48:23,753 [CAT_SAT] INFO: ------------------------------------------------------------
+2026-02-07 03:48:23,753 [CAT_SAT] INFO: Starting Phase 1: Pattern Generation...
+2026-02-07 03:48:23,759 [CAT_SAT] INFO: Phase 1 complete. Found 1817 patterns.
+2026-02-07 03:48:23,759 [CAT_SAT] INFO: Starting Phase 2: Distribution Optimization...
+2026-02-07 03:50:23,969 [CAT_SAT] INFO: Phase 2 complete.
+2026-02-07 03:50:23,970 [CAT_SAT] INFO: ============================================================
+2026-02-07 03:50:23,971 [CAT_SAT] INFO: OPTIMIZATION RESULTS
+2026-02-07 03:50:23,972 [CAT_SAT] INFO:   Total Patterns Found: 1817
+2026-02-07 03:50:23,972 [CAT_SAT] INFO:   Distribution Shape: (1817, 5)
+2026-02-07 03:50:23,972 [CAT_SAT] INFO:   Total Bars Used: 26
+2026-02-07 03:50:23,973 [CAT_SAT] INFO: ============================================================

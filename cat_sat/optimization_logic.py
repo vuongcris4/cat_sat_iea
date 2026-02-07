@@ -231,8 +231,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         usable_length = length_scaled - te_scaled
         model.Add(total_material_scaled <= usable_length)
         
-        # Cận dưới: hao hụt tối đa 1% => total_material >= length * 0.99
-        min_material = int(round(length_scaled * 0.99))
+        min_material = int(round(length_scaled * 0.99)) # Hao hụt 1%
         model.Add(total_material_scaled >= min_material)
 
         # Bật enumerate all solutions (bài toán thỏa mãn)
@@ -241,7 +240,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         solver.parameters.log_search_progress = True
 
         # KHÔNG dùng time limit cho GĐ1 (đã bỏ)
-        solver.parameters.num_search_workers = 8
+        # solver.parameters.num_search_workers = 8 # Enumerating all solutions does not work in parallel
 
         # chuẩn bị exclude từ cache hiện có (nếu có)
         exclude_set = set()
