@@ -278,7 +278,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
         # Nếu cache chưa đủ, dùng batch callback để lấy nhanh nghiệm mới
         if not self.solutions:
-            MAX_SOLUTIONS = 100000
+            MAX_SOLUTIONS = 300000
             batch = self._solve_single_bar_batch(
                 max_solutions=MAX_SOLUTIONS,
                 time_limit_sec=None
