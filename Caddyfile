@@ -1,0 +1,10 @@
+# Cat Sat IEA - Caddy Reverse Proxy
+# Automatic HTTPS via Let's Encrypt
+# Supports WebSocket for Daphne
+
+# IMPORTANT: Change the domain below to your production domain
+# For local development, use :80 instead
+
+{$DOMAIN:localhost} {
+    reverse_proxy catsat_web:8000
+}
