@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy to DigitalOcean
 
 on:
   push:
@@ -12,12 +12,24 @@ jobs:
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          port: ${{ secrets.DO_SSH_PORT }}
           script: |
-            cd /home/trand/IEA/cat_sat_iea
+            cd /opt/cat_sat_iea
             git pull origin main
-            docker compose up -d --build
+            docker compose -f docker-compose.prod.yml up -d --build
             echo "Deployed at $(date)"
+
+      - name: Health Check
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          port: ${{ secrets.DO_SSH_PORT }}
+          script: |
+            sleep 15
+            docker ps --filter name=catsat --format "table {{.Names}}\t{{.Status}}"
+            curl -sf http://localhost:8000/accounts/login/ > /dev/null && echo "✅ App is healthy" || echo "❌ App health check failed"
