@@ -7,4 +7,5 @@ urlpatterns = [
     # This pattern is for your index view and is named 'index'
     path('', views.index, name='index'),
     path('optimize/', views.optimize, name='optimize'),
+    path('export-excel-gd1/', views.export_excel_phase1, name='export_excel_phase1'),
 ]

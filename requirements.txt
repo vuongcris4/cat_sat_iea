@@ -68,3 +68,4 @@ zope.interface==7.2
 pyotp==2.9.0
 whitenoise==6.6.0
 psycopg2-binary==2.9.9
+openpyxl==3.1.5

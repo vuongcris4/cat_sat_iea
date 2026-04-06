@@ -80,7 +80,12 @@
                 <h2 class="text-secondary mb-0">Kết quả</h2>
                 <div id="status-display" class="text-primary fw-bold ms-3"></div>
             </div>
-            <button id="print-log" class="btn btn-light border" onclick="printDiv()">In kết quả</button>
+            <div class="d-flex gap-2">
+                <button id="export-excel-gd1" class="btn btn-success border" onclick="exportExcelGD1()" title="Xuất danh sách pattern GĐ1 ra Excel">
+                    📊 Excel GĐ1
+                </button>
+                <button id="print-log" class="btn btn-light border" onclick="printDiv()">In kết quả</button>
+            </div>
         </div>
         <div id="logs" class="border rounded p-3 bg-light"
             style="flex-grow: 1; overflow-y: auto; white-space: pre-wrap; font-family: monospace;"></div>
@@ -250,6 +255,54 @@
 `);
         printWindow.document.close();
         printWindow.print();
+    }
+
+    // --- XUẤT EXCEL GĐ1 ---
+    function exportExcelGD1() {
+        const btn = document.getElementById('export-excel-gd1');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Đang xuất...';
+
+        const pieces_data = hot.getData().filter(row => row.some(cell => cell !== null && cell !== '' && cell !== undefined));
+
+        const payload = {
+            length: parseInt(form.length.value),
+            te_dau_sat: parseInt(form.te_dau_sat.value),
+            blade_width: parseFloat(form.blade_width.value),
+            hao_hut_percent: parseFloat(form.hao_hut_percent.value),
+            pieces_data: pieces_data
+        };
+
+        fetch("{% url 'cat_sat:export_excel_phase1' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify(payload),
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => { throw new Error(data.message || 'Lỗi xuất Excel'); });
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            // Lấy filename từ header nếu có
+            a.download = `KetQua_GD1_Sat${form.length.value}mm.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            alert('❌ ' + error.message);
+            console.error(error);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '📊 Excel GĐ1';
+        });
     }
 </script>
 {% endblock %}
