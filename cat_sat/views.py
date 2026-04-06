@@ -106,6 +106,7 @@ def optimize(request):
                 logger.info(f"Blade Width: {data['blade_width']}mm")
                 logger.info(f"Max Manual Cuts: {data['max_manual_cuts']}")
                 logger.info(f"Max Stock Over: {data['max_stock_over']}")
+                logger.info(f"Hao Hut Percent: {data.get('hao_hut_percent', 1)}%")
                 logger.info(f"Time Limit: {time_limit_seconds}s")
                 logger.info(f"Factors: {factors}")
                 logger.info(f"Number of piece types: {len(piece_names)}")
@@ -123,6 +124,7 @@ def optimize(request):
                     factors=factors,           # Truyền list int
                     max_manual_cuts=int(data['max_manual_cuts']),
                     max_stock_over=int(data['max_stock_over']),
+                    hao_hut_percent=float(data.get('hao_hut_percent', 1)),
                     time_limit_seconds=time_limit_seconds
                 )
 

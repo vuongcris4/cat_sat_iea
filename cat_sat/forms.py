@@ -53,3 +53,9 @@ class OptimizationForm(forms.Form):
         initial=20,
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
+
+    hao_hut_percent = forms.FloatField(
+        label="Hao hụt tối đa (%)",
+        initial=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.1', 'max': '10'})
+    )

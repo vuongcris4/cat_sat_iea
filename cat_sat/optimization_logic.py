@@ -57,6 +57,7 @@ class SteelCuttingOptimizer:
         factors,
         max_manual_cuts,
         max_stock_over,
+        hao_hut_percent=1.0,
         time_limit_seconds=30.0,
     ):
         self.length = length
@@ -70,6 +71,7 @@ class SteelCuttingOptimizer:
         self.factors = sorted(list(set(factors)), reverse=True) + [1, 0] # Dùng set để loại trùng
         self.max_manual_cuts = max_manual_cuts
         self.max_stock_over = max_stock_over
+        self.hao_hut_percent = hao_hut_percent
         self.time_limit_seconds = time_limit_seconds
 
         self.solutions = []
@@ -85,6 +87,7 @@ class SteelCuttingOptimizer:
             "segment_sizes": list(map(float, self.segment_sizes.tolist())),
             "blade_width": float(self.blade_width),
             "te_dau_sat": float(self.te_dau_sat),  # Thêm tề đầu sắt vào cache key
+            "hao_hut_percent": float(self.hao_hut_percent),  # Thêm hao hụt % vào cache key
         }
         return PatternCache.generate_cache_key(payload, use_md5=True)
 
@@ -231,7 +234,7 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
         usable_length = length_scaled - te_scaled
         model.Add(total_material_scaled <= usable_length)
         
-        min_material = int(round(length_scaled * 0.99)) # Hao hụt 1%
+        min_material = int(round(length_scaled * (1 - self.hao_hut_percent / 100))) # Hao hụt theo % người dùng nhập
         model.Add(total_material_scaled >= min_material)
 
         # Bật enumerate all solutions (bài toán thỏa mãn)

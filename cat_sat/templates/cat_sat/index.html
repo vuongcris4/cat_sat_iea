@@ -38,22 +38,28 @@
             </div>
 
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
                         {{ form.time_limit_minutes.label_tag }}
                         {{ form.time_limit_minutes }}
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
                         {{ form.max_manual_cuts.label_tag }}
                         {{ form.max_manual_cuts }}
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
                         {{ form.max_stock_over.label_tag }}
                         {{ form.max_stock_over }}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        {{ form.hao_hut_percent.label_tag }}
+                        {{ form.hao_hut_percent }}
                     </div>
                 </div>
             </div>
@@ -173,6 +179,7 @@
             time_limit_minutes: parseInt(form.time_limit_minutes.value),
             max_manual_cuts: parseInt(form.max_manual_cuts.value),
             max_stock_over: parseInt(form.max_stock_over.value),
+            hao_hut_percent: parseFloat(form.hao_hut_percent.value),
             pieces_data: pieces_data
         };
 
