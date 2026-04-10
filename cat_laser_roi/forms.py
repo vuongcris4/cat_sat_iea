@@ -34,7 +34,6 @@ class OptimizationForm(forms.Form):
         min_value=1000,
         max_value=100000,
         required=False,
-        help_text="Giới hạn số patterns để tối ưu hóa (100,000 = không giới hạn, 50,000 khuyến nghị cho 20+ sản phẩm)"
     )
     use_combined_mode = forms.BooleanField(
         label="Chế độ cắt kết hợp Laser + Tự động", 
