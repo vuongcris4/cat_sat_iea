@@ -114,6 +114,8 @@ def optimize(request):
                     logger.info(f"  [{i+1}] {name}: {size}mm x {demand} pcs")
                 logger.info("-"*60)
 
+                no_bundle_constraint = data.get('no_bundle_constraint', False)
+
                 optimizer = SteelCuttingOptimizer(
                     length=int(data['length']),
                     te_dau_sat=int(data['te_dau_sat']),
@@ -125,7 +127,8 @@ def optimize(request):
                     max_manual_cuts=int(data['max_manual_cuts']),
                     max_stock_over=int(data['max_stock_over']),
                     hao_hut_percent=float(data.get('hao_hut_percent', 1)),
-                    time_limit_seconds=time_limit_seconds
+                    time_limit_seconds=time_limit_seconds,
+                    no_bundle_constraint=no_bundle_constraint
                 )
 
                 logger.info("Starting Phase 1: Pattern Generation...")

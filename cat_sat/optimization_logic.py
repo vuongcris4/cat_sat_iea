@@ -59,6 +59,7 @@ class SteelCuttingOptimizer:
         max_stock_over,
         hao_hut_percent=1.0,
         time_limit_seconds=30.0,
+        no_bundle_constraint=False,
     ):
         self.length = length
         self.te_dau_sat = te_dau_sat
@@ -73,6 +74,7 @@ class SteelCuttingOptimizer:
         self.max_stock_over = max_stock_over
         self.hao_hut_percent = hao_hut_percent
         self.time_limit_seconds = time_limit_seconds
+        self.no_bundle_constraint = no_bundle_constraint
 
         self.solutions = []
         self.solution_matrix = None
@@ -337,6 +339,9 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
     # Giai đoạn 2: Phân phối số bó (CP-SAT gọn O(n·R))
     # -----------------------------
     def optimize_distribution(self):
+        # Nếu không ràng buộc bó sắt -> dùng logic đơn giản (kiểu cat_laser_roi)
+        if self.no_bundle_constraint:
+            return self._optimize_distribution_no_bundle()
         print("<br>Bắt đầu GĐ 2: Đang tính toán bó sắt...<br>")
         if self.solution_matrix is None:
             raise ValueError("Run optimize_cutting first to generate solution matrix.")
@@ -609,3 +614,165 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
 
         # Trả về ma trận (n x |pos_factors|) để views.py .tolist() gửi ra client
         return b_opt
+
+    # -----------------------------
+    # GĐ 2 KHÔNG RÀNG BUỘC BÓ SẮT (giống cat_laser_roi)
+    # -----------------------------
+    def _optimize_distribution_no_bundle(self):
+        print("\n<br>Bắt đầu GĐ 2: Đang tính toán (không ràng buộc bó sắt)...<br>")
+        if self.solution_matrix is None:
+            raise ValueError("Run optimize_cutting first to generate solution matrix.")
+
+        # A: m x n (m = số loại đoạn, n = số pattern)
+        A = self.solution_matrix.T
+        L = np.array([self.length - sol[0] for sol in self.solutions], dtype=float)  # hao hụt / cây cho pattern j
+        m, n = A.shape
+
+        model = cp_model.CpModel()
+
+        # Biến x[j] = số cây sắt cho pattern j (không chia bó)
+        x = [model.NewIntVar(0, int(sum(self.demands) * 2), f"x_{j}") for j in range(n)]
+
+        # Ràng buộc nhu cầu: produced >= demands và <= demands + max_stock_over
+        C = []
+        for i in range(m):
+            contrib = []
+            for j in range(n):
+                aij = int(A[i, j])
+                if aij != 0:
+                    contrib.append(aij * x[j])
+            Ci = model.NewIntVar(0, 10**12, f"C_{i}")
+            model.Add(Ci == (sum(contrib) if contrib else 0))
+            model.Add(Ci >= int(self.demands[i]))
+            model.Add(Ci <= int(self.demands[i]) + int(self.max_stock_over))
+            C.append(Ci)
+
+        # Mục tiêu: minimize hao hụt tổng + tie-break nhỏ cho số cây
+        loss_terms = []
+        for j in range(n):
+            loss_terms.append(int(round(L[j] * 1000)) * x[j])
+
+        Loss_expr = sum(loss_terms) if loss_terms else 0
+        Bars_expr = sum(x)
+
+        W1 = 10**6
+        W2 = 1
+        model.Minimize(Loss_expr * W1 + Bars_expr * W2)
+
+        # Giải
+        solver = cp_model.CpSolver()
+        solver.parameters.log_search_progress = False
+        solver.parameters.max_time_in_seconds = float(self.time_limit_seconds)
+        solver.parameters.num_search_workers = 8
+
+        status = solver.Solve(model)
+
+        print("!CLEAR!")  # Xóa log trước khi in kết quả
+
+        if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            raise ValueError("Tăng tồn kho / Thời gian")
+
+        # =================================================================
+        # OUTPUT (KIỂU cat_laser_roi - không có cột bó sắt)
+        # =================================================================
+
+        tz_vn = timezone(timedelta(hours=7))
+        now = datetime.now(tz_vn)
+        print(f"<b>Thời gian: {now.strftime('%d/%m/%Y %H:%M:%S')}</b><br>")
+        print(f"<b>Chiều dài cây sắt:</b> {self.length}mm, <b>Tề đầu:</b> {self.te_dau_sat}mm, <b>Lưỡi cắt:</b> {self.blade_width}mm<br>")
+        print(f"<b>Chế độ:</b> Không ràng buộc bó sắt (tính theo cây)<br>")
+
+        # Tính toán
+        C_vals = np.array([int(solver.Value(C[i])) for i in range(m)], dtype=int)
+        x_opt = np.array([int(solver.Value(x[j])) for j in range(n)], dtype=int)
+
+        total_bars = int(x_opt.sum())
+        Loss_value = sum(L[j] * x_opt[j] for j in range(n))
+
+        # Bảng tổng kết
+        print("<h4>TỔNG KẾT CẮT TỰ ĐỘNG</h4>")
+        summary = []
+        for i in range(m):
+            summary.append({
+                "Tên sắt": self.piece_names[i],
+                "Đoạn (mm)": self.segment_sizes[i],
+                "SL cần (đoạn)": self.demands[i],
+                "SL cắt (đoạn)": C_vals[i],
+                "Tồn kho (đoạn)": C_vals[i] - self.demands[i]
+            })
+
+        summary_df = pd.DataFrame(summary)
+        summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
+        summary_styler.format({"Đoạn (mm)": lambda x: f"{x:.1f}" if x != int(x) else f"{int(x)}"})
+        print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
+
+        # Thông số chung
+        print("<hr>")
+        print(f"<b>Tổng số cây sắt cần dùng:</b> {total_bars} cây<br>")
+        print(f"<b>Tổng hao hụt dài:</b> {Loss_value / 1000:,.2f}m<br>")
+        if self.length * total_bars > 0:
+            print(f"<b>Hao hụt:</b> {(Loss_value / (self.length * total_bars)) * 100:.2f}%<br>")
+
+        # Bảng kế hoạch chi tiết
+        plan_data = []
+        for j in range(n):
+            if x_opt[j] == 0:
+                continue
+
+            pattern_solution = self.solutions[j][1]
+            pattern_waste = L[j]
+
+            row = {}
+            row['Hao hụt<br>(mm)'] = pattern_waste
+            for i in range(m):
+                row[f'segment_{i}'] = pattern_solution[i]
+            row['SL<br>cây sắt'] = x_opt[j]
+
+            plan_data.append(row)
+
+        if plan_data:
+            plan_df = pd.DataFrame(plan_data)
+
+            custom_formatter_int = lambda x: f"{int(x)}" if x == int(x) else f"{x:.1f}"
+            rename_map = {f'segment_{i}': f'{custom_formatter_int(self.segment_sizes[i])}' for i in range(m)}
+
+            plan_df.rename(columns=rename_map, inplace=True)
+            plan_df.insert(0, 'STT', np.arange(1, len(plan_df) + 1))
+
+            piece_cols = list(rename_map.values())
+            other_cols = ['STT', 'Hao hụt<br>(mm)']
+            sl_col = 'SL<br>cây sắt'
+            plan_df = plan_df[other_cols + piece_cols + [sl_col]]
+
+            # Thay 0 bằng rỗng
+            for col in piece_cols + [sl_col]:
+                plan_df[col] = plan_df[col].apply(lambda x: '' if x == 0 else int(x))
+
+            print(f"<h4>KẾ HOẠCH CẮT CHI TIẾT ({len(plan_df)} loại)</h4>")
+
+            plan_styler = plan_df.style.set_properties(**{'text-align': 'center', 'font-size': '1.1rem'})
+            plan_styler.format({'Hao hụt<br>(mm)': "{:,.1f}"})
+            plan_styler.set_properties(**{'font-weight': 'bold'}, subset=piece_cols + [sl_col])
+            plan_styler.hide(axis="index")
+
+            # Viền đậm
+            table_styles = [
+                {'selector': 'th, td', 'props': [('font-size', '1.1rem'), ('white-space', 'nowrap')]}
+            ]
+            border_style = '2px solid black'
+
+            if piece_cols:
+                first_col_idx = plan_df.columns.get_loc(piece_cols[0])
+                last_col_idx = plan_df.columns.get_loc(piece_cols[-1])
+                table_styles.extend([
+                    {'selector': f'th.col{first_col_idx}, td.col{first_col_idx}', 'props': [('border-left', border_style)]},
+                    {'selector': f'th.col{last_col_idx}, td.col{last_col_idx}', 'props': [('border-right', border_style)]},
+                    {'selector': ', '.join([f'th.col{plan_df.columns.get_loc(c)}' for c in piece_cols]), 'props': [('border-top', border_style)]},
+                    {'selector': ', '.join([f'tbody tr:last-child td.col{plan_df.columns.get_loc(c)}' for c in piece_cols]), 'props': [('border-bottom', border_style)]}
+                ])
+
+            plan_styler.set_table_styles(table_styles)
+            print(plan_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
+
+        # Trả về mảng 1D x_opt để views.py .tolist() gửi ra client
+        return x_opt

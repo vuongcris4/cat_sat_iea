@@ -29,10 +29,19 @@
                         {{ form.blade_width }}
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6" id="factors-group">
                     <div class="mb-3">
                         {{ form.factors.label_tag }}
                         {{ form.factors }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-check mb-3">
+                        {{ form.no_bundle_constraint }}
+                        {{ form.no_bundle_constraint.label_tag }}
                     </div>
                 </div>
             </div>
@@ -44,7 +53,7 @@
                         {{ form.time_limit_minutes }}
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3" id="max-manual-cuts-group">
                     <div class="mb-3">
                         {{ form.max_manual_cuts.label_tag }}
                         {{ form.max_manual_cuts }}
@@ -100,18 +109,49 @@
     const statusDisplay = document.getElementById("status-display");
     const container = document.getElementById('handsontable-container');
 
+    // --- TOGGLE ẨN/HIỆN TRƯỜNG BÓ SẮT ---
+    function toggleBundleFields() {
+        const noBundleCheckbox = document.getElementById('id_no_bundle_constraint');
+        const factorsGroup = document.getElementById('factors-group');
+        const maxManualCutsGroup = document.getElementById('max-manual-cuts-group');
+        if (noBundleCheckbox && noBundleCheckbox.checked) {
+            factorsGroup.style.display = 'none';
+            maxManualCutsGroup.style.display = 'none';
+        } else {
+            factorsGroup.style.display = '';
+            maxManualCutsGroup.style.display = '';
+        }
+    }
+    // Khi load trang
+    document.addEventListener('DOMContentLoaded', toggleBundleFields);
+    // Khi thay đổi checkbox
+    const noBundleEl = document.getElementById('id_no_bundle_constraint');
+    if (noBundleEl) noBundleEl.addEventListener('change', toggleBundleFields);
+
     // --- LƯU & KHÔI PHỤC TRẠNG THÁI FORM ---
     form.addEventListener('input', (event) => {
         if (event.target.name) {
             localStorage.setItem(event.target.name, event.target.value);
         }
     });
+    // Lưu checkbox riêng (checkbox dùng change event + .checked)
+    form.addEventListener('change', (event) => {
+        if (event.target.type === 'checkbox' && event.target.name) {
+            localStorage.setItem(event.target.name, event.target.checked);
+        }
+    });
     window.addEventListener('DOMContentLoaded', () => {
         Array.from(form.elements).forEach((element) => {
             if (element.name && localStorage.getItem(element.name)) {
-                element.value = localStorage.getItem(element.name);
+                if (element.type === 'checkbox') {
+                    element.checked = localStorage.getItem(element.name) === 'true';
+                } else {
+                    element.value = localStorage.getItem(element.name);
+                }
             }
         });
+        // Re-run toggle sau khi restore
+        toggleBundleFields();
     });
 
     // --- TÍCH HỢP HANDSONTABLE ---
@@ -176,6 +216,9 @@
         logOutput.innerHTML = "";  // Xóa log cũ ngay khi bắt đầu
         const pieces_data = hot.getData().filter(row => row.some(cell => cell !== null && cell !== '' && cell !== undefined));
 
+        const noBundleCheckbox = document.getElementById('id_no_bundle_constraint');
+        const noBundleConstraint = noBundleCheckbox ? noBundleCheckbox.checked : false;
+
         const payload = {
             length: parseInt(form.length.value),
             te_dau_sat: parseInt(form.te_dau_sat.value),
@@ -185,6 +228,7 @@
             max_manual_cuts: parseInt(form.max_manual_cuts.value),
             max_stock_over: parseInt(form.max_stock_over.value),
             hao_hut_percent: parseFloat(form.hao_hut_percent.value),
+            no_bundle_constraint: noBundleConstraint,
             pieces_data: pieces_data
         };
 

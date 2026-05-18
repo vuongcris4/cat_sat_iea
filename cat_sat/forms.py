@@ -36,6 +36,13 @@ class OptimizationForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
+    no_bundle_constraint = forms.BooleanField(
+        label="Không ràng buộc bó sắt (tính theo cây)",
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
     time_limit_minutes = forms.IntegerField(
         label="Thời gian chạy tối đa (phút)",
         initial=2,
