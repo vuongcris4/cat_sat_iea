@@ -109,17 +109,19 @@
     const statusDisplay = document.getElementById("status-display");
     const container = document.getElementById('handsontable-container');
 
-    // --- TOGGLE ẨN/HIỆN TRƯỜNG BÓ SẮT ---
+    // --- TOGGLE DISABLE TRƯỜNG BÓ SẮT ---
     function toggleBundleFields() {
         const noBundleCheckbox = document.getElementById('id_no_bundle_constraint');
-        const factorsGroup = document.getElementById('factors-group');
-        const maxManualCutsGroup = document.getElementById('max-manual-cuts-group');
-        if (noBundleCheckbox && noBundleCheckbox.checked) {
-            factorsGroup.style.display = 'none';
-            maxManualCutsGroup.style.display = 'none';
-        } else {
-            factorsGroup.style.display = '';
-            maxManualCutsGroup.style.display = '';
+        const factorsInput = document.getElementById('id_factors');
+        const maxManualCutsInput = document.getElementById('id_max_manual_cuts');
+        const isChecked = noBundleCheckbox && noBundleCheckbox.checked;
+        if (factorsInput) {
+            factorsInput.disabled = isChecked;
+            factorsInput.style.opacity = isChecked ? '0.5' : '1';
+        }
+        if (maxManualCutsInput) {
+            maxManualCutsInput.disabled = isChecked;
+            maxManualCutsInput.style.opacity = isChecked ? '0.5' : '1';
         }
     }
     // Khi load trang
