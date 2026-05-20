@@ -6,6 +6,13 @@ class OptimizationForm(forms.Form):
         label="Chiều dài cây sắt (mm)", 
         initial=6000
     )
+    trim_start = forms.IntegerField(
+        label="Tề đầu sắt (mm)",
+        initial=10,
+        min_value=0,
+        max_value=100,
+        help_text="Phần sắt bị cắt bỏ ở đầu cây (mặc định 10mm)"
+    )
     max_waste_percentage = forms.DecimalField(
         label="Hao hụt sắt tối đa (%)", 
         initial=1.0,

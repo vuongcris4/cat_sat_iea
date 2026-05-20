@@ -7,6 +7,13 @@
         <form id="optimizationForm" method="post" novalidate>
             {% csrf_token %}
             <div class="mb-3">{{ form.stock_length.label_tag }} {{ form.stock_length }}</div>
+            <div class="mb-3">
+                {{ form.trim_start.label_tag }}
+                {{ form.trim_start }}
+                {% if form.trim_start.help_text %}
+                <small class="form-text text-muted d-block">{{ form.trim_start.help_text }}</small>
+                {% endif %}
+            </div>
             <div class="mb-3">{{ form.max_waste_percentage.label_tag }} {{ form.max_waste_percentage }}</div>
             <div class="mb-3">{{ form.max_surplus.label_tag }} {{ form.max_surplus }}</div>
             <div class="mb-3">{{ form.time_limit_minutes.label_tag }} {{ form.time_limit_minutes }}</div>
@@ -231,6 +238,7 @@
 
         const payload = {
             stock_length: safeParseInt('id_stock_length', 6000),
+            trim_start: safeParseInt('id_trim_start', 10),
             max_waste_percentage: parseFloat(document.getElementById('id_max_waste_percentage').value),
             max_surplus: safeParseInt('id_max_surplus', 10),
             max_total_surplus: safeParseInt('id_max_total_surplus', 1000),

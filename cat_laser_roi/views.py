@@ -89,6 +89,7 @@ def run_optimization(request):
             optimize_max_length = data.get('optimize_max_length', 6000)  # NEW: Chiều dài tối đa
             optimize_search_step = data.get('optimize_search_step', 10)  # NEW: Bước nhảy tùy chỉnh
             optimize_stop_on_first = data.get('optimize_stop_on_first', False)  # NEW: Dừng ngay khi tìm thấy nghiệm
+            trim_start = data.get('trim_start', 10)  # Tề đầu sắt (mm)
             # use_combined_mode = data.get('use_combined_mode')
             time_limit_minutes = data.get('time_limit_minutes')
             pieces_data = data.get('pieces_data')
@@ -123,6 +124,7 @@ def run_optimization(request):
             logger.info(f"Max Waste %: {max_waste_percentage*100:.2f}%")
             logger.info(f"Max Surplus per type: {max_surplus}")
             logger.info(f"Max Total Surplus: {max_total_surplus}")
+            logger.info(f"Trim Start: {trim_start}mm")
             logger.info(f"Priority Constraint: {use_priority_constraint}")
             logger.info(f"Pattern Limit: {pattern_limit}")
             logger.info(f"Optimize Stock Length: {optimize_stock_length}")
@@ -150,7 +152,7 @@ def run_optimization(request):
                     min_length=optimize_min_length,
                     max_length=optimize_max_length,
                     step=optimize_search_step,  # Sử dụng giá trị từ form
-                    trim_start=10,
+                    trim_start=trim_start,
                     doan_thua_cat_tay=0,
                     max_total_surplus=max_total_surplus,
                     pattern_limit=pattern_limit,  # Dùng chung pattern_limit cho cả 2 mode
@@ -170,7 +172,7 @@ def run_optimization(request):
             # Chạy bình thường khi không dùng tìm kiếm tối ưu
             logger.info("Starting Phase 1: Pattern Generation (Normal Mode)...")
             patterns_data = get_or_calculate_patterns(
-                stock_length, piece_lengths, 1, max_waste_percentage, 10, 0, pattern_limit=pattern_limit
+                stock_length, piece_lengths, 1, max_waste_percentage, trim_start, 0, pattern_limit=pattern_limit
             )
             
             if patterns_data is not None and not patterns_data.empty:
