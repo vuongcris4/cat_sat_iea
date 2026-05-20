@@ -637,16 +637,25 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
     x = [model.NewIntVar(0, sum(demands_list) * 2, f'x_{j}') for j in range(len(patterns_df))]
     
     # Ràng buộc về nhu cầu sản xuất và hàng tồn kho
-    surplus_vars = {}
+    # Cho phép cả THỪA và THIẾU trong phạm vi max_surplus
+    surplus_vars = {}       # Biến chênh lệch (có thể âm = thiếu, dương = thừa)
+    abs_surplus_vars = {}   # Biến |chênh lệch| để tối ưu
     for i in range(len(piece_lengths)):
         produced = sum(x[j] * patterns_df.iloc[j][f'segment_{i}'] for j in range(len(patterns_df))) # sumproduct(segment{i}, x{i})
-        model.Add(produced >= demands_list[i])
 
-        s = model.NewIntVar(0, sum(demands_list), f'surplus_{i}')
-        
+        # s = produced - demand (có thể âm = thiếu, dương = thừa)
+        s = model.NewIntVar(-max_surplus, sum(demands_list), f'surplus_{i}')
         model.Add(s == produced - demands_list[i])
         surplus_vars[i] = s
+
+        # Ràng buộc: |chênh lệch| <= max_surplus
+        model.Add(s >= -max_surplus)
         model.Add(s <= max_surplus)
+
+        # Biến giá trị tuyệt đối để tối ưu (minimize tổng |chênh lệch|)
+        abs_s = model.NewIntVar(0, sum(demands_list), f'abs_surplus_{i}')
+        model.AddAbsEquality(abs_s, s)
+        abs_surplus_vars[i] = abs_s
 
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit_seconds
@@ -670,14 +679,14 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
             print("...Không tìm thấy lời giải cho Ưu tiên 1, dừng lại.<br>")
             return
         
-        print("<br>--- ƯU TIÊN 2: Tối thiểu hóa Tồn kho ---<br>")
+        print("<br>--- ƯU TIÊN 2: Tối thiểu hóa Chênh lệch (thừa + thiếu) ---<br>")
         print("Vui lòng chờ......<br>")
-        model.Minimize(sum(surplus_vars.values()))
+        model.Minimize(sum(abs_surplus_vars.values()))
         status = solver.Solve(model)
         if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             min_surplus_found = int(solver.ObjectiveValue())
-            print(f"✅ Mức tồn kho tối thiểu: {min_surplus_found:,.0f} đoạn<br>")
-            model.Add(sum(surplus_vars.values()) == min_surplus_found)
+            print(f"✅ Mức chênh lệch tối thiểu: {min_surplus_found:,.0f} đoạn<br>")
+            model.Add(sum(abs_surplus_vars.values()) == min_surplus_found)
         else:
             print("...Không tìm thấy lời giải cho Ưu tiên 2, dừng lại.<br>")
             return
@@ -730,8 +739,19 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
                 "Tồn kho (đoạn)": produced - demands_list[i]
             })
         summary_df = pd.DataFrame(summary)
+        
+        # Hàm highlight: đỏ nếu thiếu (âm), xanh nếu thừa (dương)
+        def highlight_inventory(val):
+            if isinstance(val, (int, float)):
+                if val < 0:
+                    return 'color: red; font-weight: bold'
+                elif val > 0:
+                    return 'color: green'
+            return ''
+        
         summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
-        summary_styler.format({"Đoạn (mm)": custom_formatter_int}) # Dinh dang so nguyen hoac so thap phan 1 chu so
+        summary_styler.format({"Đoạn (mm)": custom_formatter_int})
+        summary_styler.applymap(highlight_inventory, subset=['Tồn kho (đoạn)'])
 
         print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
         
@@ -806,7 +826,7 @@ def solve_phase2(raw_stock_length, patterns_df, piece_names, piece_lengths, dema
             'total_bars': int(total_bars_used),
             'total_waste_mm': float(final_waste),
             'waste_percentage': float(final_waste/(raw_stock_length*total_bars_used)*100) if total_bars_used > 0 else 0,
-            'total_surplus': int(sum(solver.Value(surplus_vars[i]) for i in range(len(piece_lengths)))),
+            'total_surplus': int(sum(abs(solver.Value(surplus_vars[i])) for i in range(len(piece_lengths)))),
             'production_plan': production_plan,
             'summary_df': summary_df
         }

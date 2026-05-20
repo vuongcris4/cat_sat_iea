@@ -22,7 +22,8 @@ class OptimizationForm(forms.Form):
     )
     max_surplus = forms.IntegerField(
         label="Số lượng tồn kho tối đa (mỗi loại)", 
-        initial=10
+        initial=10,
+        help_text="Cho phép thừa hoặc thiếu trong phạm vi này"
     )
     max_total_surplus = forms.IntegerField(
         label="Tổng tồn kho tối đa (tất cả loại)",
