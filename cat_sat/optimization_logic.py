@@ -403,7 +403,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
                     contrib.append(aij * bars_of_pattern(j))
             Ci = model.NewIntVar(0, 10**12, f"C_{i}")
             model.Add(Ci == (sum(contrib) if contrib else 0))
-            model.Add(Ci >= int(self.demands[i]))
+            # Cho phép cả THỪA và THIỪU trong phạm vi max_stock_over
+            model.Add(Ci >= max(0, int(self.demands[i]) - int(self.max_stock_over)))
             model.Add(Ci <= int(self.demands[i]) + int(self.max_stock_over))
             C.append(Ci)
 
@@ -492,8 +493,19 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             })
         
         summary_df = pd.DataFrame(summary)
+        
+        # Hàm highlight: đỏ nếu thiếu (âm), xanh nếu thừa (dương)
+        def highlight_inventory(val):
+            if isinstance(val, (int, float, np.integer)):
+                if val < 0:
+                    return 'color: red; font-weight: bold'
+                elif val > 0:
+                    return 'color: green'
+            return ''
+        
         summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
         summary_styler.format({"Đoạn (mm)": lambda x: f"{x:.1f}" if x != int(x) else f"{int(x)}"})
+        summary_styler.applymap(highlight_inventory, subset=['Tồn kho (đoạn)'])
         print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
 
         # 3. In các thông số chung
@@ -643,7 +655,8 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
                     contrib.append(aij * x[j])
             Ci = model.NewIntVar(0, 10**12, f"C_{i}")
             model.Add(Ci == (sum(contrib) if contrib else 0))
-            model.Add(Ci >= int(self.demands[i]))
+            # Cho phép cả THỪA và THIỪU trong phạm vi max_stock_over
+            model.Add(Ci >= max(0, int(self.demands[i]) - int(self.max_stock_over)))
             model.Add(Ci <= int(self.demands[i]) + int(self.max_stock_over))
             C.append(Ci)
 
@@ -702,8 +715,19 @@ class SteelCuttingOptimizer(SteelCuttingOptimizer):  # extend class ở trên đ
             })
 
         summary_df = pd.DataFrame(summary)
+        
+        # Hàm highlight: đỏ nếu thiếu (âm), xanh nếu thừa (dương)
+        def highlight_inventory(val):
+            if isinstance(val, (int, float, np.integer)):
+                if val < 0:
+                    return 'color: red; font-weight: bold'
+                elif val > 0:
+                    return 'color: green'
+            return ''
+        
         summary_styler = summary_df.style.set_properties(**{'text-align': 'center'}).hide(axis="index")
         summary_styler.format({"Đoạn (mm)": lambda x: f"{x:.1f}" if x != int(x) else f"{int(x)}"})
+        summary_styler.applymap(highlight_inventory, subset=['Tồn kho (đoạn)'])
         print(summary_styler.to_html(classes='table table-sm table-bordered table-striped', border=0))
 
         # Thông số chung

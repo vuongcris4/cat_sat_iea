@@ -56,9 +56,10 @@ class OptimizationForm(forms.Form):
     )
 
     max_stock_over = forms.IntegerField(
-        label="Phần dư mỗi đoạn tối đa (đoạn)",
+        label="Cho phép chênh lệch (SL đoạn/ mỗi kích thước đoạn)",
         initial=20,
-        widget=forms.NumberInput(attrs={'class': 'form-control'})
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        help_text="Cho phép thừa hoặc thiếu trong phạm vi này"
     )
 
     hao_hut_percent = forms.FloatField(
